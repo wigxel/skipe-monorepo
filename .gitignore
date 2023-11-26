@@ -1,0 +1,29 @@
+# build
+dist
+
+# node modules
+node_modules
+
+# lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# env
+.env
+
+# test
+coverage
+# docker
+volumes
+
+#idea
+.idea
+.vscode
+
+
+# logs
+logs
+
+#temp storage
+temp
