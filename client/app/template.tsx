@@ -17,13 +17,14 @@ export default function Template(props: { children?: React.ReactNode }) {
             "tracking-[2px] text-right bg-gradient from-[100%] to-white py-2 rounded-full text-black"
           }
         >
-          <div
+          <a
+            href={"/"}
             className={
               "px-6 text-right py-2 border-black border rounded-full inline-flex justify-center"
             }
           >
             <span className={"font-black"}>SKIPE</span>
-          </div>
+          </a>
         </div>
 
         <div className={"flex space-x-2"}>

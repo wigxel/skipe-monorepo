@@ -36,7 +36,7 @@ export function LoginButton() {
             className={"p-4 rounded-full hover:bg-gray-50 text-sm text-center"}
           >
             <span className={"text-muted-foreground"}>
-              {isLogin ? "Already have an account?" : "Don't have an account?"}
+              {!isLogin ? "Already have an account?" : "Don't have an account?"}
             </span>
             <Button
               variant={"link"}

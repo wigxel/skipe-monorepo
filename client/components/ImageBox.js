@@ -17,7 +17,7 @@ export function ImageBox({ ft }) {
       <label
         htmlFor={"request-image"}
         className={
-          "flex items-center flex-col space-y-4 group justify-center aspect-[4/3] border border-black rounded-2xl border-dashed"
+          "flex items-center flex-col space-y-4 group justify-center aspect-[4/3] border-2 border-gray-600 rounded-2xl border-dashed focus-within:ring-2 ring-ring ring-offset-2"
         }
       >
         {hasImage ? (

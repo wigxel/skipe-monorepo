@@ -41,8 +41,12 @@ export default function Page(props: Props) {
   }
 
   return (
-    <div className={"px-4 md:px-6 flex items-center flex-1"}>
-      <Card className={"flex flex-col rounded-2xl md:h-[80vh] md:aspect-[3/4]"}>
+    <div className={"px-4 flex items-center flex-1"}>
+      <Card
+        className={
+          "flex flex-col rounded-2xl md:h-[80vh] md:aspect-[3/4] max-w-[592px]"
+        }
+      >
         <CardHeader className={"flex-shrink-0 p-4"}>
           <CardTitle>Threads</CardTitle>
           <p className={"text-muted-foreground text-xs"}>
@@ -114,7 +118,7 @@ function ViewProofModal(props: {
 }) {
   return (
     <Dialog>
-      <DialogTrigger>{props.children}</DialogTrigger>
+      <DialogTrigger asChild>{props.children}</DialogTrigger>
       <DialogOverlay>
         <DialogContent>
           <DialogTitle className={"font-display tracking-tighter font-bold"}>

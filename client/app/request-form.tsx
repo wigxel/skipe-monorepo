@@ -2,7 +2,7 @@
 import { useFormStatus } from "react-dom";
 import { useFileTransform } from "~/hooks/use-file-transform";
 import React from "react";
-import { typeSuggestions, typeWords } from "./auto-type";
+import { AutoType, typeSuggestions, typeWords } from "./auto-type";
 import Balancer from "react-wrap-balancer";
 import { ImageBox } from "~/components/ImageBox";
 import { cn } from "~/lib/utils";
@@ -10,8 +10,18 @@ import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
 import { CategoryDropdown } from "~/components/Select";
 import { Button, ButtonContent } from "~/components/Button";
+import { Slot } from "@radix-ui/react-slot";
 
 const mimeTypes = ["image/png", "image/jpeg"];
+
+const suggestions = [
+  "Krypton's Dog food.",
+  "I'm looking for a replacement for my broken blend cutter.",
+  "A HDMI to USB-C cord for my personal computer.",
+  "I'm in need of Eco Tap head within 5 - 40k",
+  "I'm looking for a smart bulb that can pair with my phone",
+  "An Vacuum cleaner charger about 32 Volts.",
+];
 
 export function RequestForm() {
   const { pending } = useFormStatus();
@@ -19,38 +29,6 @@ export function RequestForm() {
   const ft = useFileTransform({
     allowedMimeTypes: mimeTypes,
   });
-
-  const textArea = React.useRef<HTMLTextAreaElement>();
-
-  React.useEffect(() => {
-    if (ft.file.type !== "present") return;
-
-    const el = textArea.current;
-    if (!el) return;
-    const handle = typeSuggestions(textArea.current);
-
-    const onFocus = () => {
-      handle.stop();
-      if (!el.value) {
-        typeWords(el, "Leave a detailed description");
-      }
-    };
-
-    const onBlur = () => {
-      if (el.value) return;
-      handle.continue();
-    };
-
-    handle.start();
-    el.addEventListener("focus", onFocus);
-    el.addEventListener("blur", onBlur);
-
-    return () => {
-      handle.stop();
-      el.removeEventListener("focus", onFocus);
-      el.removeEventListener("blur", onBlur);
-    };
-  }, [ft.file.type]);
 
   return (
     <div>
@@ -86,14 +64,16 @@ export function RequestForm() {
 
         <div className={"space-y-2 pt-4"}>
           <Label>What are you looking for?</Label>
-          <Textarea
-            style={{
-              height: 80,
-            }}
-            ref={textArea}
-            name={"description"}
-            className={"rounded-2xl font-sans"}
-          />
+          <AutoType
+            focusText={"Leave a detailed description"}
+            otherText={suggestions}
+          >
+            <Textarea
+              style={{ height: 80 }}
+              name={"description"}
+              className={"rounded-2xl font-sans"}
+            />
+          </AutoType>
         </div>
 
         <div className={"flex space-x-2"}>

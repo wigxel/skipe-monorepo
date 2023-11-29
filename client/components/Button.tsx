@@ -2,9 +2,13 @@ import { Button as Button_ } from "~/components/ui/button";
 import { Loader2 } from "lucide-react";
 import React, { ComponentProps } from "react";
 import { cn } from "~/lib/utils";
+import { className } from "postcss-selector-parser";
 
-export function Button(props: ComponentProps<typeof Button_>) {
-  const { size, className, variant, ...PROPS } = props;
+export const Button = React.forwardRef<
+  React.ElementRef<typeof Button_>,
+  ComponentProps<typeof Button_>
+>(function Button(props, ref) {
+  const { children, className, size, variant, ...PROPS } = props;
 
   return (
     <Button_
@@ -23,7 +27,7 @@ export function Button(props: ComponentProps<typeof Button_>) {
       {props.children}
     </Button_>
   );
-}
+});
 
 export function ButtonContent(props: {
   children: React.ReactNode;
