@@ -43,7 +43,7 @@ export default function Page(props: Props) {
   ];
 
   return (
-    <div className={"px-4 flex flex-col  flex-1 items-start justify-center"}>
+    <div className={"px-4 flex flex-col flex-1 items-start justify-center"}>
       <Card
         className={
           "flex flex-col rounded-2xl md:h-[80vh] max-w-[592px] md:aspect-[3/4]"

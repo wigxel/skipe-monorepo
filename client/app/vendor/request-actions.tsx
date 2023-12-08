@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "~/components/ui/button";
 import { Button as AppButton } from "~/components/Button";
-import { Check, EyeOff } from "lucide-react";
+import { Check, EyeOff, Info } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,13 @@ import React from "react";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
 import { AutoType } from "~/app/auto-type";
+import { Input } from "~/components/ui/input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 
 export function RequestActions() {
   return (
@@ -68,9 +75,20 @@ function ReplyModal(props: {
           <ImageBox ft={ft} />
 
           <section className={"space-y-2 mt-4"}>
-            <Label className={"text-sm text-muted-foreground"}>
-              What&apos;s the cost price?
+            <Label className={"text-sm text-muted-foreground flex space-x-2"}>
+              <span>Describe the Item you have? </span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Info size={"1rem"} />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>Hello pals</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </Label>
+
             <AutoType
               swapDuration={5000}
               focusText={"How much does this product cost?"}
@@ -82,6 +100,15 @@ function ReplyModal(props: {
                 rows={6}
               />
             </AutoType>
+            <div>
+              <Label className={"text-sm text-muted-foreground"}>
+                Selling Price
+              </Label>
+              <Input
+                className={"rounded-2xl font-sans text-right"}
+                placeholder={"20000"}
+              />
+            </div>
           </section>
 
           <DialogFooter className={"items-end flex mt-4"}>

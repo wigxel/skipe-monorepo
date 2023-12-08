@@ -9,7 +9,7 @@ export default function Template(props: { children?: React.ReactNode }) {
     >
       <header
         className={
-          "flex justify-between items-center px-4 sticky top-0 flex-shrink-0"
+          "flex justify-between container items-center px-4 sticky top-0 flex-shrink-0"
         }
       >
         <div
