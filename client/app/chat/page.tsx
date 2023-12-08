@@ -2,8 +2,10 @@
 import React, { ComponentProps } from "react";
 import { Card, CardHeader, CardTitle } from "~/components/ui/card";
 import { cn } from "~/lib/utils";
-import { ShieldCheck } from "lucide-react";
+import { SendIcon, ShieldCheck } from "lucide-react";
 import { Scrollbar } from "~/app/vendor/scroll-bar";
+import { Button } from "~/components/ui/button";
+import messages from "./data.json";
 
 export default function ChatPage() {
   return (
@@ -29,10 +31,10 @@ export default function ChatPage() {
               <aside className={"overflow-hidden py-2 pr-4"}>
                 {Array(100)
                   .fill("James Walker")
-                  .map((name) => {
+                  .map((name, index) => {
                     return (
                       <li
-                        key={name}
+                        key={index}
                         className={
                           "hover:bg-white cursor-default rounded-xl p-4 flex space-x-2 items-center h-[80px]"
                         }
@@ -102,19 +104,34 @@ export default function ChatPage() {
             <span
               className={"italic text-sm bg-gray-50 px-2 py-1 rounded-full "}
             >
-              For you safe do not share <b>contact</b> information
+              For your safety do not share <b>contact</b> information
             </span>
           </div>
-          <div className={"border-y flex-1 border-gray-50"} />
+
+          <Scrollbar>
+            <div className={"border-y flex-1 border-gray-50 px-4"}>
+              {messages.conversation.map(MessageBubble)}
+            </div>
+          </Scrollbar>
           <div
             className={
               "min-h-[60px] w-full px-[var(--space-x)] py-[calc(var(--space-x))]"
             }
           >
-            <ChatMessageBox
-              placeholder={"Message Vendor"}
-              className={"w-full bg-gray-50 rounded-lg border"}
-            />
+            <div className={"flex space-x-1"}>
+              <ChatMessageBox
+                placeholder={"Message Vendor"}
+                className={"w-full bg-gray-50 rounded-lg border"}
+              />
+
+              <Button title={"Send message"}>
+                <SendIcon />
+              </Button>
+            </div>
+            <p className={"italic absolute text-xs text-muted-foreground"}>
+              Press <span className={"font-semibold not-italic"}>Enter</span> to
+              send
+            </p>
           </div>
         </section>
       </Card>
@@ -151,13 +168,39 @@ const ChatMessageBox = React.forwardRef<
           props.className,
         )}
       />
-      <p className={"italic text-xs text-muted-foreground"}>
-        Press{" "}
-        <span className={"font-semibold not-italic text-foreground"}>
-          Enter
-        </span>{" "}
-        to send
-      </p>
     </>
   );
 });
+
+function MessageBubble(e: (typeof messages.conversation)[0]) {
+  const isLeft = e.sender === "Bob";
+  const isOwner = isLeft;
+
+  return (
+    <li
+      key={e.timestamp + e.sender}
+      className={cn("flex items-end pe-4 gap-x-1 py-2")}
+      style={{
+        direction: isLeft ? "rtl" : "ltr",
+      }}
+    >
+      <span
+        className={cn("w-4 h-4 rounded-full pe-4 bg-blue-500", {
+          "bg-orange-500": isLeft,
+        })}
+      />
+      <div
+        className={cn("p-2  max-w-[50%] text-sm rounded-2xl text-start", {
+          "rounded-br-md bg-gray-100 text-gray/50": isLeft,
+          "rounded-bl-md bg-purple-50 text-gray-800": !isLeft,
+        })}
+        style={{ direction: "ltr" }}
+      >
+        {isOwner ? null : (
+          <span className={"opacity-50 text-xs"}>{e.sender}</span>
+        )}
+        <p>{e.message}</p>
+      </div>
+    </li>
+  );
+}

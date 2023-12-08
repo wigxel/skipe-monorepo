@@ -1,0 +1,76 @@
+{
+  "conversation": [
+    {
+      "timestamp": "2023-12-08T12:00:00",
+      "sender": "Alice",
+      "message": "Hey, how's it going?",
+      "recipient": "Bob"
+    },
+    {
+      "timestamp": "2023-12-08T12:05:00",
+      "sender": "Bob",
+      "message": "Hi Alice! I'm doing well, thanks. How about you?",
+      "recipient": "Alice"
+    },
+    {
+      "timestamp": "2023-12-08T12:10:00",
+      "sender": "Alice",
+      "message": "I'm good too. Have you heard from Charlie lately?",
+      "recipient": "Bob"
+    },
+    {
+      "timestamp": "2023-12-08T12:15:00",
+      "sender": "Bob",
+      "message": "Not recently. What's up with Charlie?",
+      "recipient": "Alice"
+    },
+    {
+      "timestamp": "2023-12-08T12:20:00",
+      "sender": "Alice",
+      "message": "Charlie just got a new job! He's so excited about it.",
+      "recipient": "Bob"
+    },
+    {
+      "timestamp": "2023-12-08T12:25:00",
+      "sender": "Bob",
+      "message": "That's awesome news! Please convey my congratulations to Charlie.",
+      "recipient": "Alice"
+    },
+    {
+      "timestamp": "2023-12-08T12:30:00",
+      "sender": "Alice",
+      "message": "Sure thing! I'll let him know. By the way, how's your project coming along?",
+      "recipient": "Bob"
+    },
+    {
+      "timestamp": "2023-12-08T12:35:00",
+      "sender": "Bob",
+      "message": "It's going well, thanks for asking. We're making good progress.",
+      "recipient": "Alice"
+    },
+    {
+      "timestamp": "2023-12-08T12:40:00",
+      "sender": "Charlie",
+      "message": "Hey, what's up, guys?",
+      "recipient": "Alice and Bob"
+    },
+    {
+      "timestamp": "2023-12-08T12:45:00",
+      "sender": "Alice",
+      "message": "Hey Charlie! Congrats on the new job. Bob says congratulations too!",
+      "recipient": "Charlie"
+    },
+    {
+      "timestamp": "2023-12-08T12:50:00",
+      "sender": "Charlie",
+      "message": "Thanks, both of you! I appreciate it. How are things with you?",
+      "recipient": "Alice and Bob"
+    },
+    {
+      "timestamp": "2023-12-08T12:55:00",
+      "sender": "Alice",
+      "message": "<img src='alice_selfie.jpg' alt='Alice's selfie'>",
+      "recipient": "Charlie"
+    }
+  ]
+}
