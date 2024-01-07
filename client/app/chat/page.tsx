@@ -6,8 +6,59 @@ import { SendIcon, ShieldCheck } from "lucide-react";
 import { Scrollbar } from "~/app/vendor/scroll-bar";
 import { Button } from "~/components/ui/button";
 import messages from "./data.json";
+import { initialize, useSubscription } from "~/core/chat";
+import { createMessage } from "~/core/message";
+import { app } from "~/lib/firebase.config";
+import { filter, Observable } from "rxjs";
+import { ValueOf } from "next/constants";
+import { observableToBeFn } from "rxjs/internal/testing/TestScheduler";
+import { unknown } from "zod";
 
 export default function ChatPage() {
+  const channel_id = "ADTje3HqNuGrkj68imYr";
+  const user_id = "some-random-id";
+
+  React.useEffect(() => {
+    // const unsubscribe = onNewMessage({
+    //   channel_id: "ADTje3HqNuGrkj68imYr",
+    // });
+    //
+    // // return unsubscribe;
+    //
+    // const unsubscribe_typing = onTyping({
+    //   channel_id: "ADTje3HqNuGrkj68imYr",
+    //   user_id: "some-random-id",
+    // });
+    //
+    // sendMessage({
+    //   senderId: "",
+    //   receiverId: "",
+    //   channel_id: "ADTje3HqNuGrkj68imYr",
+    //   message: createMessage({ message: "Hi", recipient: "someone-random-id" }),
+    // })
+    //   .then(console.info)
+    //   .catch(console.error);
+    //
+    // loadMessages("ADTje3HqNuGrkj68imYr", { limit: 50 }).then((channels) => {
+    //   console.log({ channels });
+    // });
+    //
+    // return () => {
+    //   unsubscribe_typing();
+    //   unsubscribe();
+    // };
+  }, []);
+
+  const { typing } = useTyping(
+    channel_id,
+    user_id,
+    //     {
+    //   formatter: (person: { typing: boolean; id: string }[]) => {
+    //     return person.map((e) => e.id).join(" ") + " are typing";
+    //   },
+    // }
+  );
+
   return (
     <div
       className={
@@ -128,10 +179,17 @@ export default function ChatPage() {
                 <SendIcon />
               </Button>
             </div>
-            <p className={"italic absolute text-xs text-muted-foreground"}>
-              Press <span className={"font-semibold not-italic"}>Enter</span> to
-              send
-            </p>
+
+            {typing ? (
+              <p className={"italic absolute text-xs text-muted-foreground"}>
+                someone is typing
+              </p>
+            ) : (
+              <p className={"italic absolute text-xs text-muted-foreground"}>
+                Press <span className={"font-semibold not-italic"}>Enter</span>{" "}
+                to send
+              </p>
+            )}
           </div>
         </section>
       </Card>
@@ -149,6 +207,7 @@ const ChatMessageBox = React.forwardRef<
   return (
     <>
       <textarea
+        ref={ref}
         name="msg"
         {...PROPS}
         style={{ height: Math.min(rows * 24, 240) }}
@@ -204,3 +263,33 @@ function MessageBubble(e: (typeof messages.conversation)[0]) {
     </li>
   );
 }
+
+function useTyping(channel_id: string, user_id: string) {
+  const { sendMessage, onNewMessage, onTyping } = React.useMemo(
+    () => initialize(app),
+    [],
+  );
+
+  const [typing, setTyping] = React.useState(false);
+  const observable = React.useMemo(() => {
+    return onTyping({
+      channel_id,
+      user_id,
+    }).pipe(filter((e) => Object.hasOwn(e.data, "typing")));
+  }, []);
+
+  useSubscription(
+    observable,
+    React.useCallback((evt: ObservableEvent<typeof observable>) => {
+      setTyping(evt.data.typing);
+    }, []),
+  );
+
+  return { typing };
+}
+
+type ObservableEvent<T extends Observable<unknown>> = T extends Observable<
+  infer TB
+>
+  ? TB
+  : unknown;
