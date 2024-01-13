@@ -1,46 +1,51 @@
 "use client";
-import React, { ComponentProps } from "react";
+import React from "react";
 import { Card, CardHeader, CardTitle } from "~/components/ui/card";
-import { cn } from "~/lib/utils";
 import { SendIcon, ShieldCheck } from "lucide-react";
 import { Scrollbar } from "~/app/vendor/scroll-bar";
 import { Button } from "~/components/ui/button";
-import messages from "./data.json";
-import { initialize, useSubscription } from "~/core/chat";
-import { createMessage } from "~/core/message";
+import { useTyping } from "~/hooks/use-typing";
+import { ChatProvider, useChat } from "~/contexts/chat-context";
 import { app } from "~/lib/firebase.config";
-import { filter, Observable } from "rxjs";
-import { ValueOf } from "next/constants";
-import { observableToBeFn } from "rxjs/internal/testing/TestScheduler";
-import { unknown } from "zod";
+import { ChatMessageBox } from "~/components/chat/message-box";
+import { MessageBubble } from "~/components/chat/message-bubble";
+import { randomUUID } from "uncrypto";
+import { useSubscription } from "~/core/chat";
+import { bufferTime } from "rxjs";
 
-export default function ChatPage() {
-  const channel_id = "ADTje3HqNuGrkj68imYr";
+const MOCKS = {
+  SENDER_ID: "some-random-id",
+  RECEIVED_ID: "some-other-id",
+  CHANNEL_ID: "ADTje3HqNuGrkj68imYr",
+};
+
+export default function ChatRoot() {
+  return (
+    <ChatProvider app={app}>
+      <ChatPage />
+    </ChatProvider>
+  );
+}
+
+function ChatPage() {
+  const { loadMessages, newMessages$ } = useChat();
+  const channel_id = MOCKS.CHANNEL_ID;
   const user_id = "some-random-id";
 
+  const [messages, setMessages] = React.useState([]);
+
   React.useEffect(() => {
-    // const unsubscribe = onNewMessage({
-    //   channel_id: "ADTje3HqNuGrkj68imYr",
-    // });
-    //
-    // // return unsubscribe;
-    //
-    // const unsubscribe_typing = onTyping({
-    //   channel_id: "ADTje3HqNuGrkj68imYr",
-    //   user_id: "some-random-id",
-    // });
-    //
     // sendMessage({
     //   senderId: "",
     //   receiverId: "",
-    //   channel_id: "ADTje3HqNuGrkj68imYr",
+    //   channel_id: MOCKS.CHANNEL_ID,
     //   message: createMessage({ message: "Hi", recipient: "someone-random-id" }),
     // })
     //   .then(console.info)
     //   .catch(console.error);
     //
-    // loadMessages("ADTje3HqNuGrkj68imYr", { limit: 50 }).then((channels) => {
-    //   console.log({ channels });
+    // loadMessages(MOCKS.CHANNEL_ID, { limit: 50 }).then((messages) => {
+    //   setMessages(messages);
     // });
     //
     // return () => {
@@ -49,14 +54,15 @@ export default function ChatPage() {
     // };
   }, []);
 
-  const { typing } = useTyping(
-    channel_id,
-    user_id,
-    //     {
-    //   formatter: (person: { typing: boolean; id: string }[]) => {
-    //     return person.map((e) => e.id).join(" ") + " are typing";
-    //   },
-    // }
+  useSubscription(
+    React.useMemo(
+      () => newMessages$({ channel_id }).pipe(bufferTime(500)),
+      [channel_id, newMessages$],
+    ),
+    (event) => {
+      if (event.length === 0) return;
+      setMessages((arr) => [...arr, ...event]);
+    },
   );
 
   return (
@@ -133,9 +139,16 @@ export default function ChatPage() {
                   <span className={"inline-flex"}>
                     {"@johseph.wlaker".split("@").map((e) => {
                       return e === "" ? (
-                        <span className={"text-muted-foreground"}>@</span>
+                        <span
+                          key={"symbol"}
+                          className={"text-muted-foreground"}
+                        >
+                          @
+                        </span>
                       ) : (
-                        <span className={"font-medium"}>{e}</span>
+                        <span key="name" className={"font-medium"}>
+                          {e}
+                        </span>
                       );
                     })}
                   </span>
@@ -161,135 +174,98 @@ export default function ChatPage() {
 
           <Scrollbar>
             <div className={"border-y flex-1 border-gray-50 px-4"}>
-              {messages.conversation.map(MessageBubble)}
+              {messages.map((message) => {
+                if (message?.type !== "Message") return null;
+
+                return (
+                  <MessageBubble
+                    key={message.id}
+                    position={
+                      message.recipient === MOCKS.SENDER_ID ? "right" : "left"
+                    }
+                    {...message}
+                  />
+                );
+              })}
             </div>
           </Scrollbar>
-          <div
-            className={
-              "min-h-[60px] w-full px-[var(--space-x)] py-[calc(var(--space-x))]"
-            }
-          >
-            <div className={"flex space-x-1"}>
-              <ChatMessageBox
-                placeholder={"Message Vendor"}
-                className={"w-full bg-gray-50 rounded-lg border"}
-              />
 
-              <Button title={"Send message"}>
-                <SendIcon />
-              </Button>
-            </div>
-
-            {typing ? (
-              <p className={"italic absolute text-xs text-muted-foreground"}>
-                someone is typing
-              </p>
-            ) : (
-              <p className={"italic absolute text-xs text-muted-foreground"}>
-                Press <span className={"font-semibold not-italic"}>Enter</span>{" "}
-                to send
-              </p>
-            )}
-          </div>
+          <ComposeMessage />
         </section>
       </Card>
     </div>
   );
 }
 
-const ChatMessageBox = React.forwardRef<
-  HTMLTextAreaElement,
-  ComponentProps<"textarea">
->(function ChatMessageBox(props, ref) {
-  const { children, className, ...PROPS } = props;
-  const [rows, setRows] = React.useState<number>(1);
+function ComposeMessage() {
+  const { sendMessage } = useChat();
 
-  return (
-    <>
-      <textarea
-        ref={ref}
-        name="msg"
-        {...PROPS}
-        style={{ height: Math.min(rows * 24, 240) }}
-        onChange={(event) => {
-          const new_lines = /\n/gm;
-
-          if (!new_lines.test(event.target.value)) {
-            return setRows(0);
-          }
-
-          setRows(
-            ((event.target.value ?? "").match(new_lines)?.length || 1) + 1,
-          );
-        }}
-        className={cn(
-          "max-h-[240px] min-h-[40px] px-2 leading-[1.6] flex-1 resize-none text-[1rem] focus:outline-none",
-          props.className,
-        )}
-      />
-    </>
+  const [text, setText] = React.useState("");
+  const { typing, startTyping } = useTyping(
+    MOCKS.CHANNEL_ID,
+    MOCKS.RECEIVED_ID,
+    //     {
+    //   formatter: (person: { typing: boolean; id: string }[]) => {
+    //     return person.map((e) => e.id).join(" ") + " are typing";
+    //   },
+    // }
   );
-});
-
-function MessageBubble(e: (typeof messages.conversation)[0]) {
-  const isLeft = e.sender === "Bob";
-  const isOwner = isLeft;
 
   return (
-    <li
-      key={e.timestamp + e.sender}
-      className={cn("flex items-end pe-4 gap-x-1 py-2")}
-      style={{
-        direction: isLeft ? "rtl" : "ltr",
-      }}
+    <div
+      className={
+        "min-h-[60px] flex flex-col w-full px-[var(--space-x)] py-[calc(var(--space-x))]"
+      }
     >
-      <span
-        className={cn("w-4 h-4 rounded-full pe-4 bg-blue-500", {
-          "bg-orange-500": isLeft,
-        })}
-      />
-      <div
-        className={cn("p-2  max-w-[50%] text-sm rounded-2xl text-start", {
-          "rounded-br-md bg-gray-100 text-gray/50": isLeft,
-          "rounded-bl-md bg-purple-50 text-gray-800": !isLeft,
-        })}
-        style={{ direction: "ltr" }}
-      >
-        {isOwner ? null : (
-          <span className={"opacity-50 text-xs"}>{e.sender}</span>
-        )}
-        <p>{e.message}</p>
+      <div className={"flex space-x-1"}>
+        <ChatMessageBox
+          placeholder={"Message Vendor"}
+          className={"w-full bg-gray-50 rounded-lg border"}
+          value={text}
+          onKeyUp={() => startTyping()}
+          onChange={(evt) => {
+            setText(evt.currentTarget.value);
+          }}
+        />
+
+        <Button
+          title={"Send message"}
+          onClick={() => {
+            console.time("Send Duration");
+            const msg_id = randomUUID(); // bbcbcdc6-6ee5-4e7e-a4af-8db55fb5dd60 52258fc4-957b-4079-bbb5-cf01f59bf97b
+            sendMessage({
+              channel_id: MOCKS.CHANNEL_ID,
+              message: {
+                message: text,
+                id: msg_id,
+                created_at: new Date().toISOString(),
+                updated_at: null,
+                image: null,
+                recipient: MOCKS.RECEIVED_ID,
+              },
+              receiverId: "some-other-id",
+              senderId: MOCKS.RECEIVED_ID,
+            }).then((r) => {
+              console.timeEnd("Send Duration");
+              console.log(msg_id, "Done!");
+              setText("");
+            });
+          }}
+        >
+          <SendIcon />
+        </Button>
       </div>
-    </li>
+
+      {typing ? (
+        <p className={"italic text-xs text-muted-foreground"}>
+          someone is typing
+        </p>
+      ) : (
+        <p className={"italic text-xs text-muted-foreground"}>
+          Press <span className={"font-semibold not-italic"}>Enter</span> to
+          send
+        </p>
+      )}
+    </div>
   );
 }
-
-function useTyping(channel_id: string, user_id: string) {
-  const { sendMessage, onNewMessage, onTyping } = React.useMemo(
-    () => initialize(app),
-    [],
-  );
-
-  const [typing, setTyping] = React.useState(false);
-  const observable = React.useMemo(() => {
-    return onTyping({
-      channel_id,
-      user_id,
-    }).pipe(filter((e) => Object.hasOwn(e.data, "typing")));
-  }, []);
-
-  useSubscription(
-    observable,
-    React.useCallback((evt: ObservableEvent<typeof observable>) => {
-      setTyping(evt.data.typing);
-    }, []),
-  );
-
-  return { typing };
-}
-
-type ObservableEvent<T extends Observable<unknown>> = T extends Observable<
-  infer TB
->
-  ? TB
-  : unknown;

@@ -1,17 +1,19 @@
 "use client";
-import { Observable, Observer } from "rxjs";
+import { catchError, Observable, of } from "rxjs";
 import {
   collection,
   getDocs,
   setDoc,
   doc,
+  orderBy,
   getFirestore,
   query,
   where,
 } from "firebase/firestore";
-import { Message } from "~/core/message";
+import { enrichMessage, Message } from "~/core/message";
 import { onSnapshot } from "firebase/firestore";
 import React from "react";
+import { sort } from "next/dist/build/webpack/loaders/css-loader/src/utils";
 
 export function initialize(app: any) {
   const db = getFirestore(app);
@@ -44,37 +46,48 @@ export function initialize(app: any) {
     return await setDoc(document, data);
   }
 
-  function onNewMessage({ channel_id }: { channel_id: string }) {
-    const path = `channels/${channel_id}/messages`;
-    const collection_ref = collection(db, path);
+  function newMessages$({ channel_id }: { channel_id: string }) {
+    return new Observable<Message>((subscriber) => {
+      const path = Paths.message(channel_id);
+      const collection_ref = query(
+        collection(db, path),
+        orderBy("created_at", "asc"),
+      );
 
-    const unsubscribe = onSnapshot(
-      collection_ref,
-      (doc) => {
-        doc.docChanges().forEach((doc) => {
-          console.log("Current data:", doc.type, doc.doc.data());
-        });
-      },
-      (err) => {
-        console.log(err);
-      },
-    );
+      const unsubscribe = onSnapshot(
+        collection_ref,
+        (doc) => {
+          doc.docChanges().forEach((doc) => {
+            try {
+              subscriber.next(
+                enrichMessage({ id: doc.doc.id, ...doc.doc.data() }),
+              );
+            } catch (err) {
+              subscriber.error(err);
+            }
+          });
+        },
+        (err) => subscriber.error(err),
+      );
 
-    return () => {
-      console.log(`unsubscribing from ${path}`);
-      unsubscribe();
-    };
+      return () => {
+        console.log(`unsubscribing from ${path}`);
+        unsubscribe();
+      };
+    });
   }
 
   /** Returns an observable that sends typing events **/
   function onTyping(params: { channel_id: string; user_id: string }) {
-    return new Observable<{
+    type TypingEvent = {
       type: "modified" | "added";
       data: { user_id: string; typing: boolean };
-    }>((subscriber) => {
+    };
+
+    return new Observable<TypingEvent>((subscriber) => {
       const { channel_id } = params;
 
-      const path = `channels/${channel_id}/activity`;
+      const path = Paths.activity_path(channel_id);
 
       // listen for everyone except mine
       const ref = query(
@@ -87,7 +100,10 @@ export function initialize(app: any) {
         (doc) => {
           for (const rec of Array.from(doc.docChanges())) {
             if (["added", "modified"].includes(rec.type)) {
-              subscriber.next({ type: rec.type, data: rec.doc.data() });
+              subscriber.next({
+                type: rec.type,
+                data: rec.doc.data(),
+              } as TypingEvent);
             }
           }
         },
@@ -101,7 +117,29 @@ export function initialize(app: any) {
     });
   }
 
-  return { loadMessages, onNewMessage, sendMessage, onTyping };
+  async function setActivityState(params: {
+    channel_id: string;
+    user_id: string;
+    activity: { typing: boolean };
+  }) {
+    const path = `${Paths.activity_path(params.channel_id)}/${params.user_id}`;
+    const document = doc(db, path);
+    const is_typing = params.activity.typing;
+    const data = {
+      typing: is_typing,
+      user_id: params.user_id,
+    };
+
+    return await setDoc(document, data);
+  }
+
+  return {
+    loadMessages,
+    setActivityState,
+    newMessages$,
+    sendMessage,
+    onTyping,
+  };
 }
 
 export function useSubscription<TObservable extends Observable<B>, B = {}>(
@@ -111,12 +149,20 @@ export function useSubscription<TObservable extends Observable<B>, B = {}>(
   ) => void,
 ) {
   React.useEffect(() => {
-    const unsubFn = observable.subscribe(callbackFn);
+    const unsubFn = observable
+      .pipe(
+        catchError((err) => {
+          console.log("Subscription failed", err);
+          return of({ type: "Null" });
+        }),
+      )
+      .subscribe(callbackFn);
 
     return () => {
       unsubFn.unsubscribe();
     };
-  }, [observable, callbackFn]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [observable]);
 }
 
 const list_recipients = {
@@ -158,4 +204,13 @@ const root = {
       ],
     },
   ],
+};
+
+const Paths = {
+  message(channel_id: string) {
+    return `channels/${channel_id}/messages`;
+  },
+  activity_path(channel_id: string) {
+    return `channels/${channel_id}/activity`;
+  },
 };

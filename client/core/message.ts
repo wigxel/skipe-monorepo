@@ -1,4 +1,5 @@
 import { randomUUID } from "uncrypto";
+import { format, parseISO } from "date-fns";
 
 type UserId = string; // uuid // zod.brand
 
@@ -9,12 +10,20 @@ export interface Message {
   updated_at: string;
   recipient: UserId;
   image: { src: string; alt: string };
+  timestamp: string;
 }
 
 function MessageFactory(payload): Message {
   return {
     type: "Message",
     ...payload,
+    get timestamp() {
+      try {
+        return format(parseISO(this.created_at), "hh:mm dd MM YYY");
+      } catch (err) {
+        return "--";
+      }
+    },
   };
 }
 
@@ -36,13 +45,19 @@ export function createMessage(
 }
 
 export function enrichMessage(payload) {
-  if (payload.id) throw new Error("Message missing `id`");
+  if (!payload.id) {
+    const err = new Error("Message missing `id`");
+    console.log("Payload", payload);
+
+    throw err;
+  }
 
   return MessageFactory(payload);
 }
 
 const msg = createMessage({ message: "Hi", recipient: "someone-random-id" });
 const existing_msg = enrichMessage({
+  id: "someone-sample",
   message: "Hi",
   created_at: new Date().toISOString(),
   recipient: "some-random-id",
