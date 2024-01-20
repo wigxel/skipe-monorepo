@@ -29,12 +29,18 @@ export default function ChatRoot() {
 
 function ChatPage() {
   const channel_id = MOCKS.CHANNEL_ID;
+  const { loadChannels } = useChat();
 
   const [messages, setMessages] = React.useState([]);
+  const [contacts, setContacts] = React.useState([]);
 
   useMessageSubscription(channel_id, (event) => {
     setMessages((arr) => [...arr, ...event]);
   });
+
+  React.useEffect(() => {
+    loadChannels().then((contacts) => console.info("Contacts", contacts));
+  }, []);
 
   return (
     <div
@@ -57,35 +63,55 @@ function ChatPage() {
           <div className={"flex-1 -mr-4 -ml-2"}>
             <Scrollbar>
               <aside className={"overflow-hidden py-2 pr-4"}>
-                {Array(100)
-                  .fill("James Walker")
-                  .map((name, index) => {
-                    return (
-                      <li
-                        key={index}
-                        className={
-                          "hover:bg-white cursor-default rounded-xl p-4 flex space-x-2 items-center h-[80px]"
-                        }
-                      >
-                        <figure
-                          className={
-                            "w-12 aspect-square bg-gray-200 rounded-full shrink-0"
-                          }
-                        />
-                        <div className={"flex-1 "}>
-                          <p>{name}</p>
+                <li
+                  className={
+                    "hover:bg-white cursor-default rounded-xl p-4 flex space-x-2 items-center h-[80px]"
+                  }
+                >
+                  <figure
+                    className={
+                      "w-12 aspect-square bg-gray-200 rounded-full shrink-0"
+                    }
+                  />
+                  <div className={"flex-1 "}>
+                    <p>Phillip</p>
 
-                          <p
-                            className={
-                              "text-muted-foreground text-xs overflow-ellipsis overflow-hidden"
-                            }
-                          >
-                            Lorem ipsum dolor sit elit....
-                          </p>
-                        </div>
-                      </li>
-                    );
-                  })}
+                    <p
+                      className={
+                        "text-muted-foreground text-xs overflow-ellipsis overflow-hidden"
+                      }
+                    >
+                      Lorem ipsum dolor sit elit....
+                    </p>
+                  </div>
+                </li>
+                {contacts.map((name, index) => {
+                  return (
+                    <li
+                      key={index}
+                      className={
+                        "hover:bg-white cursor-default rounded-xl p-4 flex space-x-2 items-center h-[80px]"
+                      }
+                    >
+                      <figure
+                        className={
+                          "w-12 aspect-square bg-gray-200 rounded-full shrink-0"
+                        }
+                      />
+                      <div className={"flex-1 "}>
+                        <p>{name}</p>
+
+                        <p
+                          className={
+                            "text-muted-foreground text-xs overflow-ellipsis overflow-hidden"
+                          }
+                        >
+                          Lorem ipsum dolor sit elit....
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
               </aside>
             </Scrollbar>
           </div>

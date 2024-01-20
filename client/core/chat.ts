@@ -76,6 +76,16 @@ export function initialize(app: any) {
     });
   }
 
+  async function loadChannels() {
+    const ref = collection(db, `channels`);
+    const snapshot = await getDocs(ref);
+    console.log(
+      "Channels",
+      snapshot.docs.map((doc) => {
+        return doc.data();
+      }),
+    );
+  }
   // function newMessages$() {
   //   return new Observable((subscriber) => {
   //     let id;
@@ -170,6 +180,7 @@ export function initialize(app: any) {
 
   return {
     loadMessages,
+    loadChannels,
     setActivityState,
     newMessages$,
     sendMessage,
