@@ -39,7 +39,8 @@ function ChatPage() {
   });
 
   React.useEffect(() => {
-    loadChannels().then((contacts) => console.info("Contacts", contacts));
+    loadChannels().then((contacts) => setContacts(contacts));
+    //console.info("Contacts", contacts));
   }, []);
 
   return (
@@ -99,14 +100,14 @@ function ChatPage() {
                         }
                       />
                       <div className={"flex-1 "}>
-                        <p>{name}</p>
+                        <p>{(name.channel_type === 'group') ? name.group_name : '--'}</p>
 
                         <p
                           className={
                             "text-muted-foreground text-xs overflow-ellipsis overflow-hidden"
                           }
                         >
-                          Lorem ipsum dolor sit elit....
+                          { name.last_message }
                         </p>
                       </div>
                     </li>

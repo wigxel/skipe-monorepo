@@ -12,6 +12,7 @@ import {
   where,
 } from "firebase/firestore";
 import { enrichMessage, Message } from "~/core/message";
+import { ChannelFactory } from "~/core/channel";
 import React from "react";
 
 export function initialize(app: any) {
@@ -79,12 +80,17 @@ export function initialize(app: any) {
   async function loadChannels() {
     const ref = collection(db, `channels`);
     const snapshot = await getDocs(ref);
+    /*
     console.log(
       "Channels",
       snapshot.docs.map((doc) => {
-        return doc.data();
+        return ChannelFactory(doc.data());
       }),
     );
+    */
+    return snapshot.docs.map((doc) => {
+      return ChannelFactory(doc.data());
+    });
   }
   // function newMessages$() {
   //   return new Observable((subscriber) => {
