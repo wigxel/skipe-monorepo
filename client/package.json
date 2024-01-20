@@ -23,6 +23,7 @@
     "@wigxel/utils": "^1.0.10",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
+    "date-fns": "^3.3.0",
     "firebase": "^10.7.1",
     "geist": "^1.1.0",
     "lodash": "^4.17.21",
