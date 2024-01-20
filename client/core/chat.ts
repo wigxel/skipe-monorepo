@@ -43,11 +43,14 @@ export function initialize(app: any) {
     );
     const data = params.message;
 
-    return await setDoc(document, data);
+    await setDoc(document, data);
+    return;
   }
 
   function newMessages$({ channel_id }: { channel_id: string }) {
     return new Observable<Message>((subscriber) => {
+      if (!channel_id) return () => {};
+
       const path = Paths.message(channel_id);
       const collection_ref = query(
         collection(db, path),
@@ -80,14 +83,6 @@ export function initialize(app: any) {
   async function loadChannels() {
     const ref = collection(db, `channels`);
     const snapshot = await getDocs(ref);
-    /*
-    console.log(
-      "Channels",
-      snapshot.docs.map((doc) => {
-        return ChannelFactory(doc.data());
-      }),
-    );
-    */
     return snapshot.docs.map((doc) => {
       return ChannelFactory(doc.data());
     });

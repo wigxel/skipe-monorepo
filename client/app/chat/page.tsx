@@ -12,6 +12,8 @@ import { MessageBubble } from "~/components/chat/message-bubble";
 import { MessagesBox } from "~/components/chat/message-scroll-container";
 import { createMessage } from "~/core/message";
 import { useMessageSubscription } from "~/hooks/use-message-subscription";
+import { Channel } from "~/core/channel";
+import { cn } from "~/lib/utils";
 
 const MOCKS = {
   SENDER_ID: "some-random-id",
@@ -28,7 +30,16 @@ export default function ChatRoot() {
 }
 
 function ChatPage() {
-  const channel_id = MOCKS.CHANNEL_ID;
+  const [channel, setChannelId] = React.useState<Channel>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("channel"));
+    } catch {
+      return { channel_type: "none" };
+    }
+  });
+
+  const channel_id: string = channel.channel_type !== "none" ? channel.id : "";
+
   const { loadChannels } = useChat();
 
   const [messages, setMessages] = React.useState([]);
@@ -38,10 +49,18 @@ function ChatPage() {
     setMessages((arr) => [...arr, ...event]);
   });
 
+  const changeChannel = (channel: Channel) => {
+    setChannelId(channel);
+    setMessages([]);
+  };
+
   React.useEffect(() => {
     loadChannels().then((contacts) => setContacts(contacts));
-    //console.info("Contacts", contacts));
   }, []);
+
+  React.useEffect(() => {
+    localStorage.setItem("channel", JSON.stringify(channel));
+  }, [channel]);
 
   return (
     <div
@@ -64,53 +83,16 @@ function ChatPage() {
           <div className={"flex-1 -mr-4 -ml-2"}>
             <Scrollbar>
               <aside className={"overflow-hidden py-2 pr-4"}>
-                <li
-                  className={
-                    "hover:bg-white cursor-default rounded-xl p-4 flex space-x-2 items-center h-[80px]"
-                  }
-                >
-                  <figure
-                    className={
-                      "w-12 aspect-square bg-gray-200 rounded-full shrink-0"
-                    }
-                  />
-                  <div className={"flex-1 "}>
-                    <p>Phillip</p>
-
-                    <p
-                      className={
-                        "text-muted-foreground text-xs overflow-ellipsis overflow-hidden"
-                      }
-                    >
-                      Lorem ipsum dolor sit elit....
-                    </p>
-                  </div>
-                </li>
-                {contacts.map((name, index) => {
+                {contacts.map((channel) => {
                   return (
-                    <li
-                      key={index}
-                      className={
-                        "hover:bg-white cursor-default rounded-xl p-4 flex space-x-2 items-center h-[80px]"
-                      }
-                    >
-                      <figure
-                        className={
-                          "w-12 aspect-square bg-gray-200 rounded-full shrink-0"
-                        }
-                      />
-                      <div className={"flex-1 "}>
-                        <p>{(name.channel_type === 'group') ? name.group_name : '--'}</p>
-
-                        <p
-                          className={
-                            "text-muted-foreground text-xs overflow-ellipsis overflow-hidden"
-                          }
-                        >
-                          { name.last_message }
-                        </p>
-                      </div>
-                    </li>
+                    <Contact
+                      key={channel.id}
+                      data={channel}
+                      isActive={channel_id === channel.id}
+                      onClick={() => {
+                        changeChannel(channel);
+                      }}
+                    />
                   );
                 })}
               </aside>
@@ -119,94 +101,147 @@ function ChatPage() {
           <div className={"py-2 shrink-0"} />
         </div>
 
-        <section
-          className={
-            "flex-1 flex z-20 relative flex-col bg-white shadow rounded-xl mt-2 mr-2 mb-2 [--space-x:1rem] [--space-y:0.5rem]"
-          }
-        >
-          <div
+        {channel.channel_type === "none" ? (
+          <section
             className={
-              "p-[--space-x] py-[--space-y] flex justify-between items-center"
+              "flex-1 flex z-20 relative flex-col bg-white shadow rounded-xl mt-2 mr-2 mb-2 [--space-x:1rem] [--space-y:0.5rem]"
             }
           >
-            <div className={"space-x-2 flex"}>
-              <figure className={"w-12 h-12 rounded-lg bg-gray-200"}></figure>
+            <p>No Contact</p>
+          </section>
+        ) : (
+          <section
+            className={
+              "flex-1 flex z-20 relative flex-col bg-white shadow rounded-xl mt-2 mr-2 mb-2 [--space-x:1rem] [--space-y:0.5rem]"
+            }
+          >
+            <div
+              className={
+                "p-[--space-x] py-[--space-y] flex justify-between items-center"
+              }
+            >
+              <div className={"space-x-2 flex"}>
+                <figure className={"w-12 h-12 rounded-lg bg-gray-200"}></figure>
 
-              <div className={"flex flex-col flex-1 space-y-1"}>
-                <p className={"text-base items-center space-x-2 flex"}>
-                  <span className={"inline-flex"}>
-                    {"@johseph.wlaker".split("@").map((e) => {
-                      return e === "" ? (
-                        <span
-                          key={"symbol"}
-                          className={"text-muted-foreground"}
-                        >
-                          @
-                        </span>
-                      ) : (
-                        <span key="name" className={"font-medium"}>
-                          {e}
-                        </span>
-                      );
-                    })}
-                  </span>
+                <div className={"flex flex-col flex-1 space-y-1"}>
+                  <p className={"text-base items-center space-x-2 flex"}>
+                    <span className={"inline-flex"}>
+                      {safeString(channel.title)
+                        .split("@")
+                        .map((e) => {
+                          return e === "" ? (
+                            <span
+                              key={"symbol"}
+                              className={"text-muted-foreground"}
+                            >
+                              @
+                            </span>
+                          ) : (
+                            <span key="name" className={"font-medium"}>
+                              {e}
+                            </span>
+                          );
+                        })}
+                    </span>
 
-                  {true ? (
-                    <ShieldCheck color={"limegreen"} size={"1em"}>
-                      Verified
-                    </ShieldCheck>
-                  ) : null}
-                </p>
+                    {true ? (
+                      <ShieldCheck color={"limegreen"} size={"1em"}>
+                        Verified
+                      </ShieldCheck>
+                    ) : null}
+                  </p>
 
-                <p className={"text-xs text-muted-foreground"}>
-                  Joined 13 days ago
-                </p>
+                  <p className={"text-xs text-muted-foreground"}>
+                    Joined 13 days ago
+                  </p>
+                </div>
               </div>
+              <span
+                className={"italic text-sm bg-gray-50 px-2 py-1 rounded-full "}
+              >
+                For your safety do not share <b>contact</b> information
+              </span>
             </div>
-            <span
-              className={"italic text-sm bg-gray-50 px-2 py-1 rounded-full "}
-            >
-              For your safety do not share <b>contact</b> information
-            </span>
-          </div>
 
-          <Scrollbar>
-            <MessagesBox
-              getScrollContainer={(target) => {
-                return target.parentElement;
-              }}
-            >
-              <div className={"border-y flex-1 border-gray-50 px-4"}>
-                {messages.map((message) => {
-                  if (message?.type !== "Message") return null;
+            <Scrollbar>
+              <MessagesBox
+                getScrollContainer={(target) => {
+                  return target.parentElement;
+                }}
+              >
+                <div className={"border-y flex-1 border-gray-50 px-4"}>
+                  {messages.map((message) => {
+                    if (message?.type !== "Message") return null;
 
-                  return (
-                    <MessageBubble
-                      key={message.id}
-                      position={
-                        message.recipient === MOCKS.SENDER_ID ? "right" : "left"
-                      }
-                      {...message}
-                    />
-                  );
-                })}
-              </div>
-            </MessagesBox>
-          </Scrollbar>
+                    return (
+                      <MessageBubble
+                        key={message.id}
+                        position={
+                          message.recipient === MOCKS.SENDER_ID
+                            ? "right"
+                            : "left"
+                        }
+                        {...message}
+                      />
+                    );
+                  })}
+                </div>
+              </MessagesBox>
+            </Scrollbar>
 
-          <ComposeMessage />
-        </section>
+            <ComposeMessage channelId={channel_id} />
+          </section>
+        )}
       </Card>
     </div>
   );
 }
 
-function ComposeMessage() {
+function Contact(
+  props: React.ComponentProps<"li"> & {
+    data: Exclude<Channel, { channel_type: "none" }>;
+    isActive?: boolean;
+    children?: React.ReactNode;
+  },
+) {
+  const { data, onClick, isActive } = props;
+
+  return (
+    <li
+      className={cn(
+        "cursor-default rounded-xl p-4 flex space-x-2 items-center h-[80px]",
+        isActive ? "bg-white" : "hover:bg-white/[0.4] ",
+      )}
+      onClick={onClick}
+    >
+      <figure
+        className={"w-8 aspect-square bg-gray-200 rounded-full shrink-0"}
+      />
+      <div className={"flex-1 "}>
+        <div className={"flex justify-between"}>
+          <p>{data.title}</p>{" "}
+          <span className={"-mr-2 text-xs opacity-75"}>
+            {data.format_timestamp}
+          </span>
+        </div>
+        <p
+          className={
+            "text-muted-foreground text-xs overflow-ellipsis overflow-hidden"
+          }
+        >
+          {data.last_message}
+        </p>
+      </div>
+    </li>
+  );
+}
+
+function ComposeMessage(props: { channelId: string }) {
   const { sendMessage } = useChat();
 
   const [text, setText] = React.useState("");
   const { typing, startTyping } = useTyping(
-    MOCKS.CHANNEL_ID,
+    props.channelId,
     MOCKS.RECEIVED_ID,
     //     {
     //   formatter: (person: { typing: boolean; id: string }[]) => {
@@ -237,7 +272,7 @@ function ComposeMessage() {
           onClick={async () => {
             try {
               await sendMessage({
-                channel_id: MOCKS.CHANNEL_ID,
+                channel_id: props.channelId,
                 message: createMessage({
                   message: text,
                   recipient: MOCKS.SENDER_ID,
@@ -267,4 +302,8 @@ function ComposeMessage() {
       )}
     </div>
   );
+}
+
+function safeString(a: unknown) {
+  return typeof a === "string" ? a : "";
 }
