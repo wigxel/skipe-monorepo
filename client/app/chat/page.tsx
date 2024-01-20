@@ -9,9 +9,9 @@ import { ChatProvider, useChat } from "~/contexts/chat-context";
 import { app } from "~/lib/firebase.config";
 import { ChatMessageBox } from "~/components/chat/message-box";
 import { MessageBubble } from "~/components/chat/message-bubble";
-import { randomUUID } from "uncrypto";
-import { useSubscription } from "~/core/chat";
-import { bufferTime } from "rxjs";
+import { MessagesBox } from "~/components/chat/message-scroll-container";
+import { createMessage } from "~/core/message";
+import { useMessageSubscription } from "~/hooks/use-message-subscription";
 
 const MOCKS = {
   SENDER_ID: "some-random-id",
@@ -28,42 +28,13 @@ export default function ChatRoot() {
 }
 
 function ChatPage() {
-  const { loadMessages, newMessages$ } = useChat();
   const channel_id = MOCKS.CHANNEL_ID;
-  const user_id = "some-random-id";
 
   const [messages, setMessages] = React.useState([]);
 
-  React.useEffect(() => {
-    // sendMessage({
-    //   senderId: "",
-    //   receiverId: "",
-    //   channel_id: MOCKS.CHANNEL_ID,
-    //   message: createMessage({ message: "Hi", recipient: "someone-random-id" }),
-    // })
-    //   .then(console.info)
-    //   .catch(console.error);
-    //
-    // loadMessages(MOCKS.CHANNEL_ID, { limit: 50 }).then((messages) => {
-    //   setMessages(messages);
-    // });
-    //
-    // return () => {
-    //   unsubscribe_typing();
-    //   unsubscribe();
-    // };
-  }, []);
-
-  useSubscription(
-    React.useMemo(
-      () => newMessages$({ channel_id }).pipe(bufferTime(500)),
-      [channel_id, newMessages$],
-    ),
-    (event) => {
-      if (event.length === 0) return;
-      setMessages((arr) => [...arr, ...event]);
-    },
-  );
+  useMessageSubscription(channel_id, (event) => {
+    setMessages((arr) => [...arr, ...event]);
+  });
 
   return (
     <div
@@ -173,21 +144,27 @@ function ChatPage() {
           </div>
 
           <Scrollbar>
-            <div className={"border-y flex-1 border-gray-50 px-4"}>
-              {messages.map((message) => {
-                if (message?.type !== "Message") return null;
+            <MessagesBox
+              getScrollContainer={(target) => {
+                return target.parentElement;
+              }}
+            >
+              <div className={"border-y flex-1 border-gray-50 px-4"}>
+                {messages.map((message) => {
+                  if (message?.type !== "Message") return null;
 
-                return (
-                  <MessageBubble
-                    key={message.id}
-                    position={
-                      message.recipient === MOCKS.SENDER_ID ? "right" : "left"
-                    }
-                    {...message}
-                  />
-                );
-              })}
-            </div>
+                  return (
+                    <MessageBubble
+                      key={message.id}
+                      position={
+                        message.recipient === MOCKS.SENDER_ID ? "right" : "left"
+                      }
+                      {...message}
+                    />
+                  );
+                })}
+              </div>
+            </MessagesBox>
           </Scrollbar>
 
           <ComposeMessage />
@@ -230,26 +207,21 @@ function ComposeMessage() {
 
         <Button
           title={"Send message"}
-          onClick={() => {
-            console.time("Send Duration");
-            const msg_id = randomUUID(); // bbcbcdc6-6ee5-4e7e-a4af-8db55fb5dd60 52258fc4-957b-4079-bbb5-cf01f59bf97b
-            sendMessage({
-              channel_id: MOCKS.CHANNEL_ID,
-              message: {
-                message: text,
-                id: msg_id,
-                created_at: new Date().toISOString(),
-                updated_at: null,
-                image: null,
-                recipient: MOCKS.RECEIVED_ID,
-              },
-              receiverId: "some-other-id",
-              senderId: MOCKS.RECEIVED_ID,
-            }).then((r) => {
-              console.timeEnd("Send Duration");
-              console.log(msg_id, "Done!");
+          onClick={async () => {
+            try {
+              await sendMessage({
+                channel_id: MOCKS.CHANNEL_ID,
+                message: createMessage({
+                  message: text,
+                  recipient: MOCKS.SENDER_ID,
+                }),
+                receiverId: "some-other-id",
+                senderId: MOCKS.RECEIVED_ID,
+              });
               setText("");
-            });
+            } catch {
+              // TODO: Display failure state
+            }
           }}
         >
           <SendIcon />

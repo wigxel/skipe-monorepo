@@ -19,7 +19,7 @@ function MessageFactory(payload): Message {
     ...payload,
     get timestamp() {
       try {
-        return format(parseISO(this.created_at), "hh:mm dd MM YYY");
+        return format(parseISO(this.created_at), "hh:mm do MMM");
       } catch (err) {
         return "--";
       }

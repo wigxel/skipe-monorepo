@@ -2,18 +2,17 @@
 import { catchError, Observable, of } from "rxjs";
 import {
   collection,
-  getDocs,
-  setDoc,
   doc,
-  orderBy,
+  getDocs,
   getFirestore,
+  onSnapshot,
+  orderBy,
   query,
+  setDoc,
   where,
 } from "firebase/firestore";
 import { enrichMessage, Message } from "~/core/message";
-import { onSnapshot } from "firebase/firestore";
 import React from "react";
-import { sort } from "next/dist/build/webpack/loaders/css-loader/src/utils";
 
 export function initialize(app: any) {
   const db = getFirestore(app);
@@ -76,6 +75,42 @@ export function initialize(app: any) {
       };
     });
   }
+
+  // function newMessages$() {
+  //   return new Observable((subscriber) => {
+  //     let id;
+  //
+  //     interval(40)
+  //       .pipe(takeUntil(timer(2000)))
+  //       .subscribe({
+  //         next: () =>
+  //           subscriber.next(
+  //             enrichMessage(
+  //               createMessage({
+  //                 message: randomUUID(),
+  //                 recipient: "some-other-id",
+  //               }),
+  //             ),
+  //           ),
+  //         complete: () => {
+  //           id = setInterval(() => {
+  //             subscriber.next(
+  //               enrichMessage(
+  //                 createMessage({
+  //                   message: randomUUID(),
+  //                   recipient: "some-random-id",
+  //                 }),
+  //               ),
+  //             );
+  //           }, 5000);
+  //         },
+  //       });
+  //
+  //     return () => {
+  //       clearInterval(id);
+  //     };
+  //   });
+  // }
 
   /** Returns an observable that sends typing events **/
   function onTyping(params: { channel_id: string; user_id: string }) {
