@@ -29,38 +29,22 @@ export default function ChatRoot() {
   );
 }
 
+const safeArray = <T extends Array<unknown>>(a: T) => {
+  return Array.isArray(a) ? a : [];
+};
+
 function ChatPage() {
-  const [channel, setChannelId] = React.useState<Channel>(() => {
-    try {
-      return JSON.parse(localStorage.getItem("channel"));
-    } catch {
-      return { channel_type: "none" };
-    }
+  const { channel_id, channel } = useChat();
+  const [channelMessageMap, setChannelMessageMap] = React.useState({
+    [channel_id ?? "default"]: [],
   });
-
-  const channel_id: string = channel.channel_type !== "none" ? channel.id : "";
-
-  const { loadChannels } = useChat();
-
-  const [messages, setMessages] = React.useState([]);
-  const [contacts, setContacts] = React.useState([]);
 
   useMessageSubscription(channel_id, (event) => {
-    setMessages((arr) => [...arr, ...event]);
+    setChannelMessageMap((store) => ({
+      ...store,
+      [channel_id]: [...safeArray(store[channel_id]), ...event],
+    }));
   });
-
-  const changeChannel = (channel: Channel) => {
-    setChannelId(channel);
-    setMessages([]);
-  };
-
-  React.useEffect(() => {
-    loadChannels().then((contacts) => setContacts(contacts));
-  }, []);
-
-  React.useEffect(() => {
-    localStorage.setItem("channel", JSON.stringify(channel));
-  }, [channel]);
 
   return (
     <div
@@ -73,34 +57,7 @@ function ChatPage() {
           "border bg-gray-100 rounded-2xl mx-auto w-full p-0 flex flex-1 max-h-screen items-stretch"
         }
       >
-        <div className={"w-3/12 flex flex-col max-h-[100%] max-w-[350px] px-4"}>
-          <CardHeader className={"flex-shrink-0 pl-2"}>
-            <CardTitle>Conversations</CardTitle>
-          </CardHeader>
-
-          <div className={"border-t"} />
-
-          <div className={"flex-1 -mr-4 -ml-2"}>
-            <Scrollbar>
-              <aside className={"overflow-hidden py-2 pr-4"}>
-                {contacts.map((channel) => {
-                  return (
-                    <Contact
-                      key={channel.id}
-                      data={channel}
-                      isActive={channel_id === channel.id}
-                      onClick={() => {
-                        changeChannel(channel);
-                      }}
-                    />
-                  );
-                })}
-              </aside>
-            </Scrollbar>
-          </div>
-          <div className={"py-2 shrink-0"} />
-        </div>
-
+        <Conversations />
         {channel.channel_type === "none" ? (
           <section
             className={
@@ -115,84 +72,102 @@ function ChatPage() {
               "flex-1 flex z-20 relative flex-col bg-white shadow rounded-xl mt-2 mr-2 mb-2 [--space-x:1rem] [--space-y:0.5rem]"
             }
           >
-            <div
-              className={
-                "p-[--space-x] py-[--space-y] flex justify-between items-center"
-              }
-            >
-              <div className={"space-x-2 flex"}>
-                <figure className={"w-12 h-12 rounded-lg bg-gray-200"}></figure>
+            <MessageBoxHeader />
 
-                <div className={"flex flex-col flex-1 space-y-1"}>
-                  <p className={"text-base items-center space-x-2 flex"}>
-                    <span className={"inline-flex"}>
-                      {safeString(channel.title)
-                        .split("@")
-                        .map((e) => {
-                          return e === "" ? (
-                            <span
-                              key={"symbol"}
-                              className={"text-muted-foreground"}
-                            >
-                              @
-                            </span>
-                          ) : (
-                            <span key="name" className={"font-medium"}>
-                              {e}
-                            </span>
-                          );
-                        })}
-                    </span>
+            <div className={"relative flex-1"}>
+              {Object.entries(channelMessageMap).map(
+                ([local_channel_id, messages], index) => {
+                  const is_active = channel_id === local_channel_id;
 
-                    {true ? (
-                      <ShieldCheck color={"limegreen"} size={"1em"}>
-                        Verified
-                      </ShieldCheck>
-                    ) : null}
-                  </p>
+                  return (
+                    <Scrollbar key={local_channel_id}>
+                      <MessagesBox
+                        getScrollContainer={(target) => {
+                          return target.parentElement;
+                        }}
+                      >
+                        <div
+                          className={
+                            "border-y bg-orange-200 absolute inset-0 flex-1 border-gray-50 px-4"
+                          }
+                          style={
+                            !is_active
+                              ? {}
+                              : {
+                                  visibility: "hidden",
+                                }
+                          }
+                        >
+                          {messages.map((message) => {
+                            if (message?.type !== "Message") return null;
 
-                  <p className={"text-xs text-muted-foreground"}>
-                    Joined 13 days ago
-                  </p>
-                </div>
-              </div>
-              <span
-                className={"italic text-sm bg-gray-50 px-2 py-1 rounded-full "}
-              >
-                For your safety do not share <b>contact</b> information
-              </span>
+                            return (
+                              <MessageBubble
+                                key={message.id}
+                                position={
+                                  message.recipient === MOCKS.SENDER_ID
+                                    ? "right"
+                                    : "left"
+                                }
+                                {...message}
+                              />
+                            );
+                          })}
+                        </div>
+                      </MessagesBox>
+                    </Scrollbar>
+                  );
+                },
+              )}
             </div>
-
-            <Scrollbar>
-              <MessagesBox
-                getScrollContainer={(target) => {
-                  return target.parentElement;
-                }}
-              >
-                <div className={"border-y flex-1 border-gray-50 px-4"}>
-                  {messages.map((message) => {
-                    if (message?.type !== "Message") return null;
-
-                    return (
-                      <MessageBubble
-                        key={message.id}
-                        position={
-                          message.recipient === MOCKS.SENDER_ID
-                            ? "right"
-                            : "left"
-                        }
-                        {...message}
-                      />
-                    );
-                  })}
-                </div>
-              </MessagesBox>
-            </Scrollbar>
 
             <ComposeMessage channelId={channel_id} />
           </section>
         )}
       </Card>
+    </div>
+  );
+}
+
+function Conversations() {
+  const { loadChannels, channel_id, switchChannel } = useChat();
+  const [contacts, setContacts] = React.useState([]);
+
+  const changeChannel = (channel: Channel) => {
+    switchChannel(channel);
+  };
+
+  React.useEffect(() => {
+    loadChannels().then((contacts) => setContacts(contacts));
+  }, []);
+
+  return (
+    <div className={"w-3/12 flex flex-col max-h-[100%] max-w-[350px] px-4"}>
+      <CardHeader className={"flex-shrink-0 pl-2"}>
+        <CardTitle>Conversations</CardTitle>
+      </CardHeader>
+
+      <div className={"border-t"} />
+
+      <div className={"flex-1 -mr-4 -ml-2"}>
+        <Scrollbar>
+          <aside className={"overflow-hidden py-2 pr-4"}>
+            {contacts.map((channel) => {
+              return (
+                <Contact
+                  key={channel.id}
+                  data={channel}
+                  isActive={channel_id === channel.id}
+                  onClick={() => {
+                    changeChannel(channel);
+                  }}
+                />
+              );
+            })}
+          </aside>
+        </Scrollbar>
+      </div>
+      <div className={"py-2 shrink-0"} />
     </div>
   );
 }
@@ -307,3 +282,54 @@ function ComposeMessage(props: { channelId: string }) {
 function safeString(a: unknown) {
   return typeof a === "string" ? a : "";
 }
+
+function MessageBoxHeader() {
+  const { channel } = useChat();
+
+  if (channel.channel_type === "none") return;
+
+  return (
+    <div
+      className={
+        "p-[--space-x] py-[--space-y] flex justify-between items-center"
+      }
+    >
+      <div className={"space-x-2 flex"}>
+        <figure className={"w-12 h-12 rounded-lg bg-gray-200"}></figure>
+
+        <div className={"flex flex-col flex-1 space-y-1"}>
+          <p className={"text-base items-center space-x-2 flex"}>
+            <span className={"inline-flex"}>
+              {safeString(channel.title)
+                .split("@")
+                .map((e) => {
+                  return e === "" ? (
+                    <span key={"symbol"} className={"text-muted-foreground"}>
+                      @
+                    </span>
+                  ) : (
+                    <span key="name" className={"font-medium"}>
+                      {e}
+                    </span>
+                  );
+                })}
+            </span>
+
+            {true ? (
+              <ShieldCheck color={"limegreen"} size={"1em"}>
+                Verified
+              </ShieldCheck>
+            ) : null}
+          </p>
+
+          <p className={"text-xs text-muted-foreground"}>Joined 13 days ago</p>
+        </div>
+      </div>
+      <span className={"italic text-sm bg-gray-50 px-2 py-1 rounded-full "}>
+        For your safety do not share <b>contact</b> information
+      </span>
+    </div>
+  );
+}
+
+const colors = ["dodgerblue", "orange", "babypink"];
