@@ -192,7 +192,7 @@ function Contact(
       <figure
         className={"w-8 aspect-square bg-gray-200 rounded-full shrink-0"}
       >
-        <img src={data.users[0].avatar} />
+        <img src={data.getAvatar('0')} />
       </figure>
       <div className={"flex-1 "}>
         <div className={"flex justify-between"}>

@@ -20,6 +20,7 @@ type GroupChannel = MessageBase & {
   channel_type: "group";
   group_name: string;
   users: User[];
+  getAvatar: () => string;
 };
 
 export type DirectChannel = MessageBase & {
@@ -27,6 +28,7 @@ export type DirectChannel = MessageBase & {
   channel_type: "direct";
   users: User[];
   timestamp: Date;
+  getAvatar: (id: string) => string;
 };
 
 // Group & Direct
@@ -57,6 +59,10 @@ function GroupChannel(data: Record<string, unknown>): GroupChannel {
     get format_timestamp() {
       return format_timestamp(this.timestamp);
     },
+    getAvatar() {
+      return <string>data?.group_avatar;
+    }
+
   };
 }
 
@@ -77,6 +83,9 @@ function DirectChannel(data: Record<string, unknown>): DirectChannel {
     get format_timestamp() {
       return format_timestamp(this.timestamp);
     },
+    getAvatar(id: string) {
+      return this.users[id].avatar;
+    }
   };
 }
 
