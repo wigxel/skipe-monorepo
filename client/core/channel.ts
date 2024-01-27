@@ -3,6 +3,7 @@ import { formatDistance, isValid } from "date-fns";
 type User = {
   name: string;
   username: `@${string}`;
+  avatar: string | null;
 };
 
 type MessageBase = {
@@ -41,6 +42,7 @@ export function ChannelFactory(data: Record<string, unknown>): Channel {
 }
 
 function GroupChannel(data: Record<string, unknown>): GroupChannel {
+  // console.log(`GroupChannel ${typeof(data) === 'object' ? JSON.stringify(data) : data}`);
   return {
     id: <string>data?.channel_id,
     channel_type: "group",
@@ -59,6 +61,7 @@ function GroupChannel(data: Record<string, unknown>): GroupChannel {
 }
 
 function DirectChannel(data: Record<string, unknown>): DirectChannel {
+  // console.log(`DirectChannel ${typeof(data) === 'object' ? JSON.stringify(data) : data}`);
   return {
     id: <string>data?.channel_id ?? "",
     // @ts-expect-error Needs refactor

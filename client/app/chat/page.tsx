@@ -80,15 +80,15 @@ function ChatPage() {
                   const is_active = channel_id === local_channel_id;
 
                   return (
-                    <Scrollbar key={local_channel_id}>
-                      <MessagesBox
+                    // <Scrollbar key={local_channel_id}>
+                      <MessagesBox key={local_channel_id}
                         getScrollContainer={(target) => {
                           return target.parentElement;
                         }}
                       >
                         <div
                           className={
-                            "border-y bg-orange-200 absolute inset-0 flex-1 border-gray-50 px-4"
+                            "overflow-y-scroll border-y bg-orange-200 absolute inset-0 flex-1 border-gray-50 px-4"
                           }
                           style={
                             !is_active
@@ -115,7 +115,7 @@ function ChatPage() {
                           })}
                         </div>
                       </MessagesBox>
-                    </Scrollbar>
+                    // </Scrollbar>
                   );
                 },
               )}
@@ -191,7 +191,9 @@ function Contact(
     >
       <figure
         className={"w-8 aspect-square bg-gray-200 rounded-full shrink-0"}
-      />
+      >
+        <img src={data.users[0].avatar} />
+      </figure>
       <div className={"flex-1 "}>
         <div className={"flex justify-between"}>
           <p>{data.title}</p>{" "}
@@ -295,7 +297,9 @@ function MessageBoxHeader() {
       }
     >
       <div className={"space-x-2 flex"}>
-        <figure className={"w-12 h-12 rounded-lg bg-gray-200"}></figure>
+        <figure className={"w-12 h-12 rounded-lg bg-gray-200"}>
+          <img src={channel.users[0].avatar} />
+        </figure>
 
         <div className={"flex flex-col flex-1 space-y-1"}>
           <p className={"text-base items-center space-x-2 flex"}>

@@ -9,7 +9,7 @@ type CtxValue = ReturnType<typeof initialize> & {
   switchChannel: (channel_id: Channel) => void;
 };
 
-const Ctx = React.createContext<CtxValue>({} as CtxValue);
+const Ctx = React.createContext<CtxValue>({channel: {channel_type: "none"}} as CtxValue);
 
 export function ChatProvider(props: {
   app: typeof app;
@@ -19,7 +19,7 @@ export function ChatProvider(props: {
 
   const [channel, switchChannel] = React.useState<Channel>(() => {
     try {
-      return JSON.parse(localStorage.getItem("channel"));
+      return JSON.parse(localStorage.getItem("channel")) ?? { channel_type: "none" };
     } catch {
       return { channel_type: "none" };
     }
