@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import React from "react";
 import { Card, CardHeader, CardTitle } from "~/components/ui/card";
 import { SendIcon, ShieldCheck } from "lucide-react";
@@ -13,7 +14,7 @@ import { MessagesBox } from "~/components/chat/message-scroll-container";
 import { createMessage } from "~/core/message";
 import { useMessageSubscription } from "~/hooks/use-message-subscription";
 import { Channel } from "~/core/channel";
-import { cn } from "~/lib/utils";
+import { cn, safeArray, safeString } from "~/lib/utils";
 
 const MOCKS = {
   SENDER_ID: "some-random-id",
@@ -28,10 +29,6 @@ export default function ChatRoot() {
     </ChatProvider>
   );
 }
-
-const safeArray = <T extends Array<unknown>>(a: T) => {
-  return Array.isArray(a) ? a : [];
-};
 
 function ChatPage() {
   const { channel_id, channel } = useChat();
@@ -81,40 +78,41 @@ function ChatPage() {
 
                   return (
                     // <Scrollbar key={local_channel_id}>
-                      <MessagesBox key={local_channel_id}
-                        getScrollContainer={(target) => {
-                          return target.parentElement;
-                        }}
+                    <MessagesBox
+                      key={local_channel_id}
+                      getScrollContainer={(target) => {
+                        return target.parentElement;
+                      }}
+                    >
+                      <div
+                        className={
+                          "overflow-y-scroll border-y bg-orange-200 absolute inset-0 flex-1 border-gray-50 px-4"
+                        }
+                        style={
+                          !is_active
+                            ? {}
+                            : {
+                                visibility: "hidden",
+                              }
+                        }
                       >
-                        <div
-                          className={
-                            "overflow-y-scroll border-y bg-orange-200 absolute inset-0 flex-1 border-gray-50 px-4"
-                          }
-                          style={
-                            !is_active
-                              ? {}
-                              : {
-                                  visibility: "hidden",
-                                }
-                          }
-                        >
-                          {messages.map((message) => {
-                            if (message?.type !== "Message") return null;
+                        {messages.map((message) => {
+                          if (message?.type !== "Message") return null;
 
-                            return (
-                              <MessageBubble
-                                key={message.id}
-                                position={
-                                  message.recipient === MOCKS.SENDER_ID
-                                    ? "right"
-                                    : "left"
-                                }
-                                {...message}
-                              />
-                            );
-                          })}
-                        </div>
-                      </MessagesBox>
+                          return (
+                            <MessageBubble
+                              key={message.id}
+                              position={
+                                message.recipient === MOCKS.SENDER_ID
+                                  ? "right"
+                                  : "left"
+                              }
+                              {...message}
+                            />
+                          );
+                        })}
+                      </div>
+                    </MessagesBox>
                     // </Scrollbar>
                   );
                 },
@@ -138,7 +136,9 @@ function Conversations() {
   };
 
   React.useEffect(() => {
-    loadChannels().then((contacts) => setContacts(contacts));
+    loadChannels("6fb80cfa-e5f4-4819-8837-f55698e3dc7b").then((contacts) => {
+      setContacts(safeArray(contacts));
+    });
   }, []);
 
   return (
@@ -190,9 +190,21 @@ function Contact(
       onClick={onClick}
     >
       <figure
-        className={"w-8 aspect-square bg-gray-200 rounded-full shrink-0"}
+        className={
+          "w-8 aspect-square bg-gray-200 rounded-full shrink-0 overflow-hidden"
+        }
       >
-        <img src={data.getAvatar('0')} />
+        <Image
+          alt={data.title}
+          width={50}
+          height={50}
+          src={
+            data.channel_type == "direct"
+              ? data.getAvatar("0")
+              : data.getAvatar()
+          }
+          className={"object-cover"}
+        />
       </figure>
       <div className={"flex-1 "}>
         <div className={"flex justify-between"}>
@@ -281,10 +293,6 @@ function ComposeMessage(props: { channelId: string }) {
   );
 }
 
-function safeString(a: unknown) {
-  return typeof a === "string" ? a : "";
-}
-
 function MessageBoxHeader() {
   const { channel } = useChat();
 
@@ -297,8 +305,20 @@ function MessageBoxHeader() {
       }
     >
       <div className={"space-x-2 flex"}>
-        <figure className={"w-12 h-12 rounded-lg bg-gray-200"}>
-          <img src={channel.users[0].avatar} />
+        <figure className={"w-12 h-12 rounded-lg overflow-hidden bg-gray-200"}>
+          <Image
+            alt={channel.title}
+            width={100}
+            height={100}
+            src={
+              channel.channel_type == "direct"
+                ? channel.getAvatar("0")
+                : channel.channel_type === "group"
+                  ? channel.getAvatar()
+                  : null
+            }
+            className={"object-fit"}
+          />
         </figure>
 
         <div className={"flex flex-col flex-1 space-y-1"}>
@@ -326,7 +346,16 @@ function MessageBoxHeader() {
             ) : null}
           </p>
 
-          <p className={"text-xs text-muted-foreground"}>Joined 13 days ago</p>
+          {channel.channel_type === "group" ? (
+            <div className={"text-xs text-muted-foreground"}>
+              {/* Pluralize */}
+              <span>{channel.users.length} members</span>
+            </div>
+          ) : (
+            <p className={"text-xs text-muted-foreground"}>
+              Joined 13 days ago
+            </p>
+          )}
         </div>
       </div>
       <span className={"italic text-sm bg-gray-50 px-2 py-1 rounded-full "}>

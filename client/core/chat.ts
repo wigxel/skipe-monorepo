@@ -3,6 +3,8 @@ import { catchError, Observable, of } from "rxjs";
 import {
   collection,
   doc,
+  DocumentReference,
+  getDoc,
   getDocs,
   getFirestore,
   onSnapshot,
@@ -12,8 +14,15 @@ import {
   where,
 } from "firebase/firestore";
 import { enrichMessage, Message } from "~/core/message";
-import { ChannelFactory } from "~/core/channel";
+import {
+  ChannelFactory,
+  ChannelFactory_,
+  User,
+  UserFactory,
+} from "~/core/channel";
 import React from "react";
+import { randomUUID } from "uncrypto";
+import { safeArray } from "~/lib/utils";
 
 export function initialize(app: any) {
   const db = getFirestore(app);
@@ -80,48 +89,51 @@ export function initialize(app: any) {
     });
   }
 
-  async function loadChannels() {
-    const ref = collection(db, `channels`);
-    const snapshot = await getDocs(ref);
-    return snapshot.docs.map((doc) => {
-      return ChannelFactory(doc.data());
-    });
+  let loading = false;
+  async function loadChannels(user_id: string) {
+    if (loading) return;
+    loading = true;
+    try {
+      const channels_ref = collection(db, `channels`);
+      const ref = query(
+        channels_ref,
+        where("user_ids", "array-contains", user_id),
+      );
+      const snapshot = await getDocs(ref);
+
+      return await Promise.all(
+        snapshot.docs.map(async (doc) => {
+          const channel_data = doc.data();
+          const users = [];
+
+          for await (const ref of safeArray(channel_data.users)) {
+            users.push((await getDoc(ref)).data());
+          }
+
+          return ChannelFactory_.create(
+            Object.assign(channel_data, {
+              users,
+            }),
+          );
+        }),
+      );
+    } catch (err) {
+      console.error("Error loading channels", err.message);
+    } finally {
+      loading = false;
+    }
   }
-  // function newMessages$() {
-  //   return new Observable((subscriber) => {
-  //     let id;
-  //
-  //     interval(40)
-  //       .pipe(takeUntil(timer(2000)))
-  //       .subscribe({
-  //         next: () =>
-  //           subscriber.next(
-  //             enrichMessage(
-  //               createMessage({
-  //                 message: randomUUID(),
-  //                 recipient: "some-other-id",
-  //               }),
-  //             ),
-  //           ),
-  //         complete: () => {
-  //           id = setInterval(() => {
-  //             subscriber.next(
-  //               enrichMessage(
-  //                 createMessage({
-  //                   message: randomUUID(),
-  //                   recipient: "some-random-id",
-  //                 }),
-  //               ),
-  //             );
-  //           }, 5000);
-  //         },
-  //       });
-  //
-  //     return () => {
-  //       clearInterval(id);
-  //     };
-  //   });
-  // }
+
+  function getChannelUser(user_id: string) {
+    const ref = doc(db, "users", user_id);
+
+    return getDoc(ref).then((e) => e.data());
+  }
+
+  async function registerUser(user_data: User) {
+    const ref = doc(db, `users/${user_data.id}`);
+    return setDoc(ref, user_data);
+  }
 
   /** Returns an observable that sends typing events **/
   function onTyping(params: { channel_id: string; user_id: string }) {
@@ -179,6 +191,27 @@ export function initialize(app: any) {
     return await setDoc(document, data);
   }
 
+  function runSeed() {
+    const promise = Promise.all(
+      [
+        UserFactory.create({
+          id: randomUUID(),
+          username: "@johnny.mill",
+          name: "Johnny Mill",
+          avatar: "https://ui-avatars.com/api/?name=Wonka+Group",
+        }),
+        UserFactory.create({
+          id: randomUUID(),
+          username: "@wick.group",
+          name: "Wick",
+          avatar: "https://ui-avatars.com/api/?name=Wick+Morgan",
+        }),
+      ].map((data) => registerUser(data)),
+    );
+
+    return promise;
+  }
+
   return {
     loadMessages,
     loadChannels,
@@ -186,6 +219,7 @@ export function initialize(app: any) {
     newMessages$,
     sendMessage,
     onTyping,
+    runSeed,
   };
 }
 
