@@ -17,7 +17,13 @@ export function ChatProvider(props: {
   app: typeof app;
   children?: React.ReactNode;
 }) {
-  const value = React.useMemo(() => initialize(props.app), [props.app]);
+  const value = React.useMemo(
+    () =>
+      initialize(props.app, {
+        user_id: "6fb80cfa-e5f4-4819-8837-f55698e3dc7b",
+      }),
+    [props.app],
+  );
 
   const [channel, switchChannel] = React.useState<Channel>(() => {
     try {
@@ -35,13 +41,6 @@ export function ChatProvider(props: {
     },
     [channel],
   );
-
-  // React.useEffect(() => {
-  //   value
-  //     .runSeed()
-  //     .then(console.info)
-  //     .then(() => console.log(">> Seeding complete!"));
-  // }, []);
 
   return (
     <Ctx.Provider value={{ channel_id, switchChannel, channel, ...value }}>

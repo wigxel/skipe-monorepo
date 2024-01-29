@@ -136,8 +136,8 @@ function Conversations() {
   };
 
   React.useEffect(() => {
-    loadChannels("6fb80cfa-e5f4-4819-8837-f55698e3dc7b").then((contacts) => {
-      setContacts(safeArray(contacts));
+    loadChannels().then((contacts) => {
+      setContacts(contacts);
     });
   }, []);
 
@@ -226,7 +226,7 @@ function Contact(
 }
 
 function ComposeMessage(props: { channelId: string }) {
-  const { sendMessage } = useChat();
+  const { sendMessage, getSenderId } = useChat();
 
   const [text, setText] = React.useState("");
   const { typing, startTyping } = useTyping(
@@ -264,13 +264,14 @@ function ComposeMessage(props: { channelId: string }) {
                 channel_id: props.channelId,
                 message: createMessage({
                   message: text,
-                  recipient: MOCKS.SENDER_ID,
+                  recipient: getSenderId(),
                 }),
-                receiverId: "some-other-id",
-                senderId: MOCKS.RECEIVED_ID,
+                receiver_id: null,
+                sender_id: getSenderId(),
               });
               setText("");
-            } catch {
+            } catch (err) {
+              console.error(err);
               // TODO: Display failure state
             }
           }}

@@ -1,9 +1,10 @@
 "use client";
 import { catchError, Observable, of } from "rxjs";
 import {
+  and,
   collection,
   doc,
-  DocumentReference,
+  getCountFromServer,
   getDoc,
   getDocs,
   getFirestore,
@@ -14,17 +15,14 @@ import {
   where,
 } from "firebase/firestore";
 import { enrichMessage, Message } from "~/core/message";
-import {
-  ChannelFactory,
-  ChannelFactory_,
-  User,
-  UserFactory,
-} from "~/core/channel";
+import { ChannelFactory_, User, UserFactory } from "~/core/channel";
 import React from "react";
 import { randomUUID } from "uncrypto";
 import { safeArray } from "~/lib/utils";
 
-export function initialize(app: any) {
+export function initialize(app: any, config: { user_id: string }) {
+  const { user_id } = config;
+
   const db = getFirestore(app);
 
   async function loadMessages(channel_id: string, config: { limit: 50 }) {
@@ -40,12 +38,23 @@ export function initialize(app: any) {
   }
 
   async function sendMessage(params: {
-    senderId: string;
-    receiverId: string;
+    sender_id: string;
+    receiver_id: string | null;
     channel_id: string;
     message: Message;
   }) {
     const msg_id = params.message.id;
+    const is_participant = await isUserChannelMember({
+      channel_id: params.channel_id,
+      user_id: params.sender_id,
+    });
+
+    if (!is_participant) {
+      throw new Error(
+        "This member isn't a part of the group. So they should be allowed to send a message",
+      );
+    }
+
     const document = doc(
       db,
       `channels/${params.channel_id}/messages/${msg_id}`,
@@ -54,6 +63,25 @@ export function initialize(app: any) {
 
     await setDoc(document, data);
     return;
+  }
+
+  async function isUserChannelMember(config: {
+    user_id: string;
+    channel_id: string;
+  }) {
+    const { user_id, channel_id } = config;
+
+    const ref = query(
+      collection(db, "channels"),
+      and(
+        where("user_ids", "array-contains", user_id),
+        where("channel_id", "==", channel_id),
+      ),
+    );
+
+    const count = await getCountFromServer(ref);
+
+    return count.data().count > 0;
   }
 
   function newMessages$({ channel_id }: { channel_id: string }) {
@@ -90,8 +118,9 @@ export function initialize(app: any) {
   }
 
   let loading = false;
-  async function loadChannels(user_id: string) {
-    if (loading) return;
+  async function loadChannels() {
+    if (loading) return [];
+
     loading = true;
     try {
       const channels_ref = collection(db, `channels`);
@@ -100,7 +129,6 @@ export function initialize(app: any) {
         where("user_ids", "array-contains", user_id),
       );
       const snapshot = await getDocs(ref);
-
       return await Promise.all(
         snapshot.docs.map(async (doc) => {
           const channel_data = doc.data();
@@ -122,12 +150,6 @@ export function initialize(app: any) {
     } finally {
       loading = false;
     }
-  }
-
-  function getChannelUser(user_id: string) {
-    const ref = doc(db, "users", user_id);
-
-    return getDoc(ref).then((e) => e.data());
   }
 
   async function registerUser(user_data: User) {
@@ -212,12 +234,17 @@ export function initialize(app: any) {
     return promise;
   }
 
+  function getSenderId() {
+    return user_id;
+  }
+
   return {
     loadMessages,
     loadChannels,
     setActivityState,
     newMessages$,
     sendMessage,
+    getSenderId,
     onTyping,
     runSeed,
   };
