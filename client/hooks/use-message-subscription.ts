@@ -1,8 +1,8 @@
 import { Message } from "~/core/message";
 import { useChat } from "~/contexts/chat-context";
-import { useSubscription } from "~/core/chat";
-import React, { useEffect } from "react";
+import React from "react";
 import { bufferTime } from "rxjs";
+import { useSubscription } from "~/hooks/use-subscription";
 
 export function useMessageSubscription(
   channel_id: string,

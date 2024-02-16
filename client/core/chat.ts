@@ -1,5 +1,5 @@
 "use client";
-import { catchError, Observable, of } from "rxjs";
+import { Observable } from "rxjs";
 import {
   and,
   collection,
@@ -16,7 +16,6 @@ import {
 } from "firebase/firestore";
 import { enrichMessage, Message } from "~/core/message";
 import { ChannelFactory_, User, UserFactory } from "~/core/channel";
-import React from "react";
 import { randomUUID } from "uncrypto";
 import { safeArray } from "~/lib/utils";
 
@@ -249,70 +248,6 @@ export function initialize(app: any, config: { user_id: string }) {
     runSeed,
   };
 }
-
-export function useSubscription<TObservable extends Observable<B>, B = {}>(
-  observable: TObservable,
-  callbackFn: (
-    evt: TObservable extends Observable<infer B> ? B : unknown,
-  ) => void,
-) {
-  React.useEffect(() => {
-    const unsubFn = observable
-      .pipe(
-        catchError((err) => {
-          console.log("Subscription failed", err);
-          return of({ type: "Null" });
-        }),
-      )
-      .subscribe(callbackFn);
-
-    return () => {
-      unsubFn.unsubscribe();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [observable]);
-}
-
-const list_recipients = {
-  "some-random-id": { name: "John snow", active: false },
-  "some-random-id-2": { name: "Alice Walker", active: false },
-};
-
-const messages = [
-  { message: "Hi John", recipient: "some-random-id", timestamp: Date.now() },
-  { message: "Frankly", recipient: "some-random-id-2", timestamp: Date.now() },
-];
-
-// list of channels
-// -> each channel contains messages
-// -> every message has recipient
-
-`/channel-id/messages`;
-const record = {
-  "channel-id": messages, // 1,000,000,0000 -> 2 recipient
-};
-
-const root = {
-  channels: [
-    {
-      id: "ADTje3HqNuGrkj68imYr",
-      name: "Tokunbo",
-      timestamp: "",
-      messages: [
-        {
-          id: "4UvRqcZewBZJkqU5JI3c",
-          message: "Hello",
-          recipient: "some-random-uuid",
-        }, // John
-        {
-          id: "N4frah4rwJxjhOdd8ugr",
-          message: "Hi",
-          recipient: "some-random-uuid",
-        }, // Alice
-      ],
-    },
-  ],
-};
 
 const Paths = {
   message(channel_id: string) {

@@ -1,8 +1,9 @@
 import { filter, Observable } from "rxjs";
 import React from "react";
-import { useSubscription } from "~/core/chat";
 import debounce from "lodash/debounce";
 import { useChat } from "~/contexts/chat-context";
+
+import { useSubscription } from "~/hooks/use-subscription";
 
 type ObservableEvent<T extends Observable<unknown>> = T extends Observable<
   infer TB
@@ -50,4 +51,3 @@ export function useTyping(channel_id: string, user_id: string) {
 
   return { typing, startTyping };
 }
-

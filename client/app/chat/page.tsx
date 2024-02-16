@@ -73,8 +73,11 @@ function ChatPage() {
 
             <div className={"relative flex-1"}>
               {Object.entries(channelMessageMap).map(
-                ([local_channel_id, messages], index) => {
+                ([local_channel_id, messages]) => {
                   const is_active = channel_id === local_channel_id;
+
+                  if (is_active)
+                    console.log(local_channel_id, channel_id, messages.length);
 
                   return (
                     // <Scrollbar key={local_channel_id}>
@@ -89,7 +92,7 @@ function ChatPage() {
                           "overflow-y-scroll border-y bg-orange-200 absolute inset-0 flex-1 border-gray-50 px-4"
                         }
                         style={
-                          !is_active
+                          is_active
                             ? {}
                             : {
                                 visibility: "hidden",
