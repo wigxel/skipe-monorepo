@@ -2,8 +2,8 @@
 import path from "pathe";
 
 export default defineNitroConfig({
-	preset: "node",
-	experimental: {
-		openAPI: true,
-	},
+  preset: "node",
+  experimental: {
+    openAPI: true,
+  },
 });
