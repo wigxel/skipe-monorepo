@@ -35,17 +35,18 @@ export default async function Template(props: { children?: React.ReactNode }) {
 
           <div className={"flex space-x-2"}>
             <LoginButton />
-            <button
-              className={
-                "aspect-square h-[40px] inline-flex items-center justify-center rounded-full hover:bg-white/[0.3] w-[40px]"
-              }
-            >
-              <HelpCircle />
-            </button>
           </div>
         </header>
 
         {props.children}
+
+        <button
+          className={
+            "aspect-square fixed right-2 bottom-2 h-[40px] inline-flex items-center justify-center rounded-full hover:bg-white/[0.3] w-[40px]"
+          }
+        >
+          <HelpCircle />
+        </button>
       </main>
     </AuthSessionProvider>
   );
