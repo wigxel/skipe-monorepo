@@ -10,9 +10,13 @@ import { Button } from "~/components/Button";
 import React from "react";
 import { LoginForm } from "~/app/login-form";
 import { SignupForm } from "~/app/signup-form";
+import { signIn, useSession } from "next-auth/react";
 
 export function LoginButton() {
-  const [isLogin, set] = React.useState(false);
+  const [isLogin, set] = React.useState(true);
+  const session = useSession();
+
+  console.log(session);
 
   return (
     <Dialog>
@@ -45,6 +49,10 @@ export function LoginButton() {
             >
               {isLogin ? "Create account" : "Login"}
             </Button>
+
+            <button onClick={() => signIn("google")}>
+              Sign in with Google
+            </button>
           </div>
         </DialogContent>
       </DialogOverlay>
