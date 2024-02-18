@@ -142,7 +142,7 @@ function Conversations() {
     loadChannels().then((contacts) => {
       setContacts(contacts);
     });
-  }, []);
+  }, [loadChannels]);
 
   return (
     <div className={"w-3/12 flex flex-col max-h-[100%] max-w-[350px] px-4"}>

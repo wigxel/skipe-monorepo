@@ -80,7 +80,7 @@ export const ScrollToBottom = React.forwardRef<
     return () => {
       observer.disconnect();
     };
-  }, [props]);
+  }, [props, scrollToBottom]);
 
   return <Slot ref={targetRef}>{props.children}</Slot>;
 });

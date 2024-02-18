@@ -50,7 +50,7 @@ export default function Page(props: Props) {
         <CardHeader className={"flex-shrink-0 p-4"}>
           <CardTitle>Threads</CardTitle>
           <p className={"text-muted-foreground text-xs"}>
-            I'm looking for a micro blender blender to help with my tea..
+            {`I'm looking for a micro blender blender to help with my tea..`}
           </p>
         </CardHeader>
         <CardContent className={"flex-1 border-y"}>
