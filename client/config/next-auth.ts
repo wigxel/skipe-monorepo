@@ -21,7 +21,7 @@ export const auth_options = {
           },
           async authorize() {
             return {
-              id: 1,
+              id: "1",
               name: "Joseph Smith",
               email: "jsmith@example.com",
               image: "https://i.pravatar.cc/150?u=jsmith@example.com",
@@ -36,6 +36,7 @@ export const auth_options = {
   callbacks: {
     async signIn({ account, profile }) {
       if (account.provider === "google") {
+        // @ts-expect-error
         return profile.email_verified;
       }
 
