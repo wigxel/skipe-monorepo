@@ -9,12 +9,11 @@
   "dependencies": {
     "@biomejs/biome": "^1.5.3",
     "@prisma/client": "5.9.1",
-    "@types/bcryptjs": "^2.4.6",
-    "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.4",
     "google-auth-library": "^9.6.3",
     "jsonwebtoken": "^9.0.2",
     "nitropack": "^2.8.1",
+    "oslo": "^1.1.2",
     "pathe": "^1.1.2",
     "reflect-metadata": "^0.2.1",
     "sequelize": "6.37.0",
@@ -25,6 +24,7 @@
     "zod-validation-error": "^3.0.2"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.11.19",
     "@types/validator": "^13.11.9",
     "prisma": "^5.9.1"

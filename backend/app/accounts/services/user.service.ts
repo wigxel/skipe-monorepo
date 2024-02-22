@@ -1,11 +1,11 @@
 import { CreateUserSchema } from "../schemas/user.schema";
-import { CreateUserQuery } from "../repositories/user.repo";
-import { TCreateUserAttributes } from "../types/user.types";
+import { createUserQuery } from "../repositories/user.repo";
 import { randomUUID } from "uncrypto";
-import * as bcrypt from "bcryptjs";
+import { EncryptPassword } from "~/app/auth/services/auth.service";
+import { z } from "zod";
 
-export const CreateUserService = async (
-  createUserDto: Omit<TCreateUserAttributes, "id">,
+export const createNewUser = async (
+  createUserDto: z.infer<typeof CreateUserSchema>,
 ) => {
   const validate = await CreateUserSchema.safeParseAsync(createUserDto);
 
@@ -16,20 +16,16 @@ export const CreateUserService = async (
   }
 
   const data = validate.data;
-  const hashedPassword = bcrypt.hashSync(data.password, 10);
+  const encrypt = EncryptPassword();
+  const hashedPassword = await encrypt.hash(data.password);
 
   const userAttributes = {
     id: randomUUID(),
     email: data.email,
-    firstname: data.name,
+    firstname: data.firstname,
+    lastname: data.lastname,
     password: hashedPassword,
   };
-  const user = await CreateUserQuery(userAttributes);
 
-  return {
-    status: 201,
-    title: "User created",
-    message: "User created successfully",
-    entity: user,
-  };
+  return createUserQuery(userAttributes);
 };

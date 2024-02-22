@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { verify } from "~/app/oauth/controller";
-import { prisma } from "~/config/database";
 import { resolveZodData } from "~/utils/event";
+import { getUserByEmailQuery } from "~/app/accounts/repositories/user.repo";
+import { createUser } from "~/app/auth/services/auth.service";
+import { randomUUID } from "uncrypto";
 
 const schema = z.object({
   token: z.string().min(4),
@@ -19,7 +21,7 @@ export default eventHandler(async (event) => {
 
   // verify that the account is valid
   const {
-    payload: { email },
+    payload: { email, given_name, family_name },
   } = await verify({ client_id, token }).catch(() => {
     throw createError({
       status: 404,
@@ -27,12 +29,33 @@ export default eventHandler(async (event) => {
     });
   });
 
-  const matched_user = await prisma.users.findUnique({
-    where: { email },
+  // find existing user
+  const existing_user = await getUserByEmailQuery(email);
+
+  if (existing_user) {
+    return {
+      status: "success",
+      data: existing_user,
+    };
+  }
+
+  // or create a new user
+  const new_user = await createUser({
+    email,
+    firstname: given_name,
+    lastname: family_name,
+    password: randomUUID(),
+  }).catch((err) => {
+    console.log(err);
+    // or fail with error
+    throw createError({
+      message: "Unable to create a user at the time",
+      stack: err.stack,
+    });
   });
 
   return {
     status: "success",
-    data: matched_user,
+    data: new_user,
   };
 });

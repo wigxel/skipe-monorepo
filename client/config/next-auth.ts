@@ -35,16 +35,6 @@ export const auth_options = {
           clientSecret: process.env.GOOGLE_AUTH_CLIENT_SECRET,
         }),
   ],
-
-  events: {
-    createUser: (message) => {
-      console.log("New user created", message);
-    },
-    updateUser: (message) => {
-      console.log("Updating user", message);
-    },
-  },
-
   callbacks: {
     async jwt({ token, account }) {
       if (account?.provider === "google") {
@@ -64,6 +54,9 @@ export const auth_options = {
       }
 
       return token;
+    },
+    session({ session, token }) {
+      return { ...session, app_user: token.app_user };
     },
   },
 } satisfies NextAuthOptions;

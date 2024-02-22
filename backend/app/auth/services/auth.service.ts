@@ -1,29 +1,48 @@
-import {
-  CreateUserService,
-  GetUserService,
-} from "../../../backend/modules/accounts/services/user.service";
+import { createNewUser } from "~/app/accounts/services/user.service";
 import {
   TLoginUserAttributes,
   TRegisterUserAttributes,
 } from "../types/auth.types";
-
-import * as bcrypt from "bcryptjs";
 import { LoginUserSchema } from "../schemas/auth.schema";
-import { generateToken } from "../../../backend/common/token";
+import { generateToken } from "./jwt.service";
+import { getUserByEmailQuery } from "~/app/accounts/repositories/user.repo";
+import * as webcrypto from "uncrypto";
+import { Argon2id } from "oslo/password";
 
-export const RegisterUserService = async (
-  registerUserDto: TRegisterUserAttributes,
-) => {
-  const user = await CreateUserService(registerUserDto);
-  const token = await generateToken({
-    id: user.entity.id,
-    email: user.entity.email,
-  });
+export function EncryptPassword() {
+  globalThis.crypto = webcrypto;
+
+  const argon2id = new Argon2id();
+
+  async function hashPassword(password: string) {
+    return await argon2id.hash(password);
+  }
+
+  async function comparePassword(hash: string, password: string) {
+    return argon2id.verify(hash, password);
+  }
+
   return {
-    id: user.entity.id,
-    email: user.entity.email,
-    token,
-    isVendor: user.entity.isVendor,
+    hash: hashPassword,
+    verify: comparePassword,
+  };
+}
+
+
+export const createUser = async (registerUserDto: TRegisterUserAttributes) => {
+  const user = await createNewUser(registerUserDto);
+  const token = await generateToken({
+    id: user.id,
+    email: user.email,
+  });
+
+  return {
+    id: user.id,
+    email: user.email,
+    access_token: token,
+    roles: {
+      vendor: user.is_vendor,
+    },
   };
 };
 
@@ -34,8 +53,9 @@ export const LoginUserService = async (loginUserDto: TLoginUserAttributes) => {
     throw createError({ message: "Invalid body provided!" });
   }
 
-  const user = await GetUserService(loginUserDto.email);
-  const validatePassword = bcrypt.compareSync(
+  const user = await getUserByEmailQuery(loginUserDto.email);
+    const encrypt = EncryptPassword();
+  const validatePassword = await encrypt.verify(
     loginUserDto.password,
     user.password,
   );
@@ -46,14 +66,15 @@ export const LoginUserService = async (loginUserDto: TLoginUserAttributes) => {
   const token = await generateToken({ id: user.id, email: user.email });
 
   return {
-    status: 200,
-    title: "Login User",
-    message: "User logged in successfully",
-    entity: {
+    auth: {
+      access_token: token,
+    },
+    data: {
       id: user.id,
       email: user.email,
-      token,
-      isVendor: user.isVendor,
+      roles: {
+        vendor: user.is_vendor,
+      },
     },
   };
 };
