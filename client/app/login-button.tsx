@@ -40,7 +40,7 @@ export function LoginButton() {
           <AuthDropdown>
             <DropdownMenuTrigger className="flex items-center space-x-1 outline-none">
               <span className="font-body">{user.first_name}</span>
-              <ChevronDown size="0.874rem" />
+              <ChevronDown size="0.874rem" strokeWidth={3} />
             </DropdownMenuTrigger>
           </AuthDropdown>
         </div>

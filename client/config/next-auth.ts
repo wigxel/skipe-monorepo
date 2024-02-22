@@ -1,12 +1,14 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { ofetch } from "ofetch";
 
-export const is_fake_auth =
-  process.env.NODE_ENV === "development" ||
-  process.env.VERCEL_ENV === "preview";
+export const is_fake_auth = !(
+  process.env.NODE_ENV === "development" || process.env.VERCEL_ENV === "preview"
+);
 
 export const auth_options = {
+  useSecureCookies: process.env.NODE_ENV !== "development",
   providers: [
     is_fake_auth
       ? CredentialsProvider({
@@ -33,14 +35,35 @@ export const auth_options = {
           clientSecret: process.env.GOOGLE_AUTH_CLIENT_SECRET,
         }),
   ],
+
+  events: {
+    createUser: (message) => {
+      console.log("New user created", message);
+    },
+    updateUser: (message) => {
+      console.log("Updating user", message);
+    },
+  },
+
   callbacks: {
-    async signIn({ account, profile }) {
-      if (account.provider === "google") {
-        // @ts-expect-error
-        return profile.email_verified;
+    async jwt({ token, account }) {
+      if (account?.provider === "google") {
+        const user_details = await ofetch(
+          "http://localhost:3000/api/oauth/google",
+          {
+            method: "post",
+            body: { token: account.id_token },
+          },
+        ).catch((err) => {
+          throw new Error("User doesn't exist in our database");
+        });
+
+        if (user_details) {
+          token.app_user = user_details;
+        }
       }
 
-      return true; // Do different verification for other providers that don't have `email_verified`
+      return token;
     },
   },
 } satisfies NextAuthOptions;
