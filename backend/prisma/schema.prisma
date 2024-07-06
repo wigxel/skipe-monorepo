@@ -9,12 +9,12 @@ datasource db {
 
 model channel_subscriptions {
   id         String   @id @db.VarChar(255)
-  user_id    String   @db.VarChar(255)
+  user_id    String   @db.Uuid
   channel_id String   @db.VarChar(255)
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @updatedAt @db.Timestamptz(6)
   channels   channels @relation(fields: [channel_id], references: [id], onDelete: Cascade)
-  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  users      users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 }
 
 model channels {
@@ -30,13 +30,14 @@ model product_requests {
   id          String   @id @db.VarChar(255)
   description String?  @db.VarChar(255)
   image_url   String?  @db.VarChar(255)
-  user_id     String   @db.VarChar(255)
+  user_id     String   @db.Uuid
   created_at  DateTime @default(now()) @db.Timestamptz(6)
   updated_at  DateTime @updatedAt @db.Timestamptz(6)
 }
 
 model users {
-  id                    String                  @id @db.VarChar(255)
+  id                    String                  @db.VarChar(255)
+  user_id               String                  @id @db.Uuid
   firstname             String?                 @db.VarChar(255)
   lastname              String?                 @db.VarChar(255)
   is_vendor             Boolean?                @default(false)
@@ -44,7 +45,7 @@ model users {
   password              String?                 @db.VarChar(255)
   deleted_at            DateTime?               @db.Timestamptz(6)
   last_seen             DateTime?               @db.Timestamptz(6)
-  created_at            DateTime                @updatedAt @db.Timestamptz(6)
-  updated_at            DateTime                @updatedAt @db.Timestamptz(6)
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime?               @updatedAt @db.Timestamptz(6)
   channel_subscriptions channel_subscriptions[]
 }

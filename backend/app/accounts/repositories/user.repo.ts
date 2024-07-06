@@ -7,6 +7,7 @@ export const createUserQuery = async (createUserDto: TCreateUserAttributes) => {
       // @ts-expect-error
     data: {
       ...createUserDto,
+        user_id: randomUUID(),
       created_at: new Date(),
       updated_at: new Date(),
     },
@@ -14,7 +15,7 @@ export const createUserQuery = async (createUserDto: TCreateUserAttributes) => {
 };
 
 export const getUserByIdQuery = async (id: string) =>
-  prisma.users.findUnique({ where: { id } });
+  prisma.users.findUnique({ where: { user_id: id } });
 
 export const getUserByEmailQuery = async (email: string) =>
   prisma.users.findUnique({ where: { email } });

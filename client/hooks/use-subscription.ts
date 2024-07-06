@@ -12,8 +12,8 @@ export function useSubscription<TObservable extends Observable<B>, B = {}>(
     const unsubFn = observable
       .pipe(
         catchError((err) => {
-          console.log("Subscription failed", err);
-          return of({ type: "Null" });
+          console.log("Subscription failed. Returning empty results", err);
+          return of([]);
         }),
       )
       .subscribe(callbackFn);

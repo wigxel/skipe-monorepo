@@ -1,11 +1,15 @@
+"use client";
 import { initialize } from "~/core/chat";
 import React from "react";
 import { app } from "~/lib/firebase.config";
-import { Channel, parseChannel } from "~/core/channel";
+import { ValidChannel, Channel, parseChannel } from "~/core/channel";
+import { useLoading } from "~/hooks/use-async-loader";
 
 type CtxValue = ReturnType<typeof initialize> & {
+  loading: { channels: boolean };
   channel_id: string;
   channel: Channel;
+  channels: ValidChannel[];
   switchChannel: (channel_id: Channel) => void;
 };
 
@@ -17,7 +21,7 @@ export function ChatProvider(props: {
   app: typeof app;
   children?: React.ReactNode;
 }) {
-  const value = React.useMemo(
+  const chatInstance = React.useMemo(
     () =>
       initialize(props.app, {
         user_id: "6fb80cfa-e5f4-4819-8837-f55698e3dc7b",
@@ -25,6 +29,7 @@ export function ChatProvider(props: {
     [props.app],
   );
 
+  const [channels, setChannels] = React.useState<ValidChannel[]>([]);
   const [channel, switchChannel] = React.useState<Channel>(() => {
     try {
       return parseChannel(JSON.parse(localStorage.getItem("channel")));
@@ -42,12 +47,49 @@ export function ChatProvider(props: {
     [channel],
   );
 
+  const asyncLoader = useLoading({ channels: false });
+
+  React.useEffect(() => {
+    const abort = new AbortController();
+    asyncLoader.startLoading("channels");
+    chatInstance
+      .loadChannels({ signal: abort.signal })
+      .then((channels) => {
+        const valid_channels = channels.filter(
+          (e) => e.channel_type !== "none",
+        ) as ValidChannel[];
+        setChannels(valid_channels);
+      })
+      .catch((reason) => {
+        console.error(`Error fetching channels: ${reason.message}`);
+      })
+      .finally(() => {
+        initial_status = "pending";
+        asyncLoader.stopLoading("channels");
+      });
+
+    return () => {
+      abort.abort("Unsubscribing from Context");
+    };
+  }, []);
+
   return (
-    <Ctx.Provider value={{ channel_id, switchChannel, channel, ...value }}>
+    <Ctx.Provider
+      value={{
+        loading: asyncLoader.loading,
+        channel_id,
+        switchChannel,
+        channels,
+        channel,
+        ...chatInstance,
+      }}
+    >
       {props.children}
     </Ctx.Provider>
   );
 }
+
+let initial_status = "pending";
 
 export function useChat() {
   return React.useContext(Ctx);

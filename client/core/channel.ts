@@ -36,6 +36,8 @@ export type DirectChannel = MessageBase & {
 // Group & Direct
 export type Channel = GroupChannel | DirectChannel | NoChannel;
 
+export type ValidChannel = Exclude<Channel, { channel_type: "none" }>;
+
 function NoChannelFactory(): NoChannel {
   return { channel_type: "none" };
 }

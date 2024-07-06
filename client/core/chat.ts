@@ -18,6 +18,7 @@ import { enrichMessage, Message } from "~/core/message";
 import { ChannelFactory_, User, UserFactory } from "~/core/channel";
 import { randomUUID } from "uncrypto";
 import { safeArray } from "~/lib/utils";
+import React from "react";
 
 export function initialize(app: any, config: { user_id: string }) {
   const { user_id } = config;
@@ -116,20 +117,26 @@ export function initialize(app: any, config: { user_id: string }) {
     });
   }
 
-  let loading = false;
-  async function loadChannels() {
-    if (loading) return [];
+  const loadChannels = async function loadChannels({
+    signal,
+  }: {
+    signal: AbortSignal;
+  }) {
+    const maybeAbort = () => signal.throwIfAborted();
 
-    loading = true;
-    try {
+    async function innerLoadChannels() {
       const channels_ref = collection(db, `channels`);
       const ref = query(
         channels_ref,
         where("user_ids", "array-contains", user_id),
       );
+      maybeAbort();
       const snapshot = await getDocs(ref);
-      return await Promise.all(
+      maybeAbort();
+      const all_channels = await Promise.all(
         snapshot.docs.map(async (doc) => {
+          maybeAbort();
+
           const channel_data = doc.data();
           const users = [];
 
@@ -144,12 +151,20 @@ export function initialize(app: any, config: { user_id: string }) {
           );
         }),
       );
-    } catch (err) {
-      console.error("Error loading channels", err.message);
-    } finally {
-      loading = false;
+      maybeAbort();
+      return all_channels ?? [];
     }
-  }
+
+    return innerLoadChannels().then((channels) => {
+      console.assert(
+        Array.isArray(channels),
+        `Invalid contact. Expecting array got: (${channels?.constructor?.name})`,
+        channels,
+      );
+      if (!Array.isArray(channels)) return [];
+      return channels;
+    });
+  };
 
   async function registerUser(user_data: User) {
     const ref = doc(db, `users/${user_data.id}`);
@@ -238,8 +253,8 @@ export function initialize(app: any, config: { user_id: string }) {
   }
 
   return {
-    loadMessages,
     loadChannels,
+    loadMessages,
     setActivityState,
     newMessages$,
     sendMessage,
